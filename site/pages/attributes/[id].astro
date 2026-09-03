@@ -9,6 +9,7 @@ import {
 	inlineCode,
 	kindLabel,
 	STABILITY_LABEL,
+	setSourceTag,
 	severityClass,
 	stabilityClass,
 } from "../../lib/format.ts"
@@ -23,6 +24,9 @@ export async function getStaticPaths() {
 
 const { attribute } = Astro.props
 const data = await catalog()
+
+// Relative links in registry prose resolve against the release being rendered.
+setSourceTag(`v${data.latest.version}`)
 
 const events = [...(data.lifecycle.get(attribute.id) ?? [])].reverse()
 const successor = attribute.deprecated?.renamedTo
@@ -116,7 +120,9 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 	}
 
 	{
-		attribute.brief && (
+		/* A deprecated attribute's brief is usually just "Deprecated, use X instead",
+		   which the callout above has already said more clearly. */
+		attribute.brief && !(attribute.deprecated && /^(deprecated|removed|replaced)\b/i.test(attribute.brief)) && (
 			<p class="mt-6 mb-0 text-[16px] leading-relaxed" set:html={inlineCode(attribute.brief)} />
 		)
 	}

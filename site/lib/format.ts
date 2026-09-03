@@ -4,16 +4,36 @@ import type { Severity } from "../../src/model/diff.ts"
 const escapeHtml = (s: string) =>
 	s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
+/** The tag whose sources relative links in registry prose point at. */
+let sourceTag = "main"
+export const setSourceTag = (tag: string) => {
+	sourceTag = tag
+}
+
+const SEMCONV_REPO = "https://github.com/open-telemetry/semantic-conventions"
+
 /**
- * Upstream prose and our own change details both use single-backtick spans for
- * identifiers. Everything else is escaped -- these strings come from YAML we do
- * not control, so nothing else is allowed through as markup.
+ * Upstream prose and our own change details use single-backtick code spans and
+ * Markdown links. Both are converted; everything else is escaped first, because
+ * these strings come from YAML we do not control and nothing else may reach the
+ * page as markup.
+ *
+ * Registry notes link relatively (`/docs/db/database-spans.md#...`), which only
+ * resolves on opentelemetry.io. Those are rewritten to the pinned upstream tag
+ * so the destination matches the definition being shown.
  */
 export function inlineCode(text: string): string {
-	return escapeHtml(text).replace(
-		/`([^`]+)`/g,
-		'<code class="font-mono text-[0.92em] px-1 py-px rounded bg-rule/50">$1</code>',
-	)
+	return escapeHtml(text)
+		.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_match, label: string, href: string) => {
+			const url = href.startsWith("http")
+				? href
+				: href.startsWith("/")
+					? `${SEMCONV_REPO}/blob/${sourceTag}${href}`
+					: href
+			if (!url.startsWith("http")) return label
+			return `<a href="${url}">${label}</a>`
+		})
+		.replace(/`([^`]+)`/g, '<code class="font-mono text-[0.92em] px-1 py-px rounded bg-rule/50">$1</code>')
 }
 
 export const STABILITY_LABEL: Record<string, string> = {

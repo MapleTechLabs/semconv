@@ -33,8 +33,13 @@
 	color-scheme: light dark;
 }
 
+/*
+ * Dark mode redefines the same custom properties on :root. It cannot be another
+ * `@theme` block - Tailwind hoists those out of media queries, so a nested one
+ * would apply its values unconditionally and the site would be dark always.
+ */
 @media (prefers-color-scheme: dark) {
-	@theme {
+	:root {
 		--color-paper: oklch(0.17 0.008 265);
 		--color-surface: oklch(0.21 0.009 265);
 		--color-ink: oklch(0.93 0.006 265);
