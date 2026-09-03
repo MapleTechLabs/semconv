@@ -97,8 +97,19 @@ bun run deploy   # build, then wrangler deploy
 ```
 
 `wrangler.jsonc` declares `semconv.com` and `www.semconv.com` as custom domains, which requires the
-zone to be on Cloudflare with this account's nameservers. The Worker 301s `www` to the apex; every
-canonical URL, the feed and `llms.txt` point at the apex only.
+zone to be on Cloudflare with this account's nameservers.
+
+**Deployed headers live in [`public/_headers`](public/_headers), not in the endpoint code.**
+Cloudflare serves `dist/` through its asset layer and discards the headers an Astro endpoint sets on
+its `Response`; those only apply under `astro preview`. CORS on `/api/*` comes from that file.
+
+The same asset-first routing means the Worker's `www` → apex redirect only fires for paths with no
+matching asset (`/mcp`, 404s). Asset paths are served on `www` too, with every page's
+`<link rel="canonical">` pointing at the apex. To make it a hard 301 everywhere, add a zone-level
+**Redirect Rule** in the Cloudflare dashboard (`Rules → Redirect Rules`): match
+`http.host eq "www.semconv.com"`, redirect to `concat("https://semconv.com", http.request.uri)`,
+301, preserve query string. That runs at the edge for free — the alternative,
+`assets.run_worker_first`, bills a Worker invocation for every asset request.
 
 ## Data
 

@@ -175,6 +175,11 @@ describe.skipIf(!built)("mcp worker", () => {
 		expect(response.status).toBe(200)
 	})
 
+	/**
+	 * True of the Worker, and in production true only for paths with no matching
+	 * asset — Cloudflare's asset layer answers the rest before the Worker runs.
+	 * See the comment on the fetch handler.
+	 */
 	test("www redirects to the apex, preserving the path", async () => {
 		const response = await worker.fetch(new Request("https://www.semconv.com/attributes/db.query.text"), env)
 		expect(response.status).toBe(301)

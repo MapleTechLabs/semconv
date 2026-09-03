@@ -315,9 +315,19 @@ export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url)
 
-		// One canonical host. `www` is bound as a custom domain only so that
-		// typing it works; everything it receives is redirected to the apex, which
-		// is what every canonical URL, feed and llms.txt entry points at.
+		// One canonical host, as far as this Worker can enforce it.
+		//
+		// Cloudflare's asset layer answers any request that matches a file in
+		// `dist/` *before* the Worker runs, so this only fires for paths with no
+		// matching asset — `/mcp` and 404s. Asset paths are therefore served on
+		// `www` too, and it is the `<link rel="canonical">` on every page (always
+		// the apex) that keeps search engines from treating that as duplicate
+		// content.
+		//
+		// Making the redirect absolute would mean `run_worker_first: true`, which
+		// bills a Worker invocation for every asset request forever to fix a
+		// cosmetic redirect. A zone-level Redirect Rule does the same job at the
+		// edge for free; see the README.
 		if (url.hostname.startsWith("www.")) {
 			url.hostname = url.hostname.slice(4)
 			return Response.redirect(url.toString(), 301)

@@ -1,0 +1,17 @@
+# Cloudflare serves `dist/` through its asset layer, which does not preserve the
+# headers an Astro endpoint sets on its Response — those only apply to `astro
+# preview`. Anything the deployed API needs has to be declared here.
+
+/api/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, OPTIONS
+  Cache-Control: public, max-age=3600
+
+# The two files agents fetch directly, so they need the same cross-origin access.
+/llms.txt
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/feed.xml
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
