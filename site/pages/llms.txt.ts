@@ -11,7 +11,7 @@ import { SITE } from "../lib/site.ts"
  */
 export const GET: APIRoute = async ({ site }) => {
 	const data = await catalog()
-	const origin = site?.origin ?? `https://${SITE.name}`
+	const origin = site?.origin ?? SITE.origin
 
 	const semconv = data.semconv
 	const spec = data.spec

@@ -11,6 +11,8 @@
  * resume and no SSE stream to keep open.
  */
 
+import { SITE } from "../site.ts"
+
 interface Env {
 	ASSETS: { fetch: (request: Request) => Promise<Response> }
 }
@@ -313,6 +315,14 @@ export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url)
 
+		// One canonical host. `www` is bound as a custom domain only so that
+		// typing it works; everything it receives is redirected to the apex, which
+		// is what every canonical URL, feed and llms.txt entry points at.
+		if (url.hostname.startsWith("www.")) {
+			url.hostname = url.hostname.slice(4)
+			return Response.redirect(url.toString(), 301)
+		}
+
 		if (url.pathname !== "/mcp") return env.ASSETS.fetch(request)
 		if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS })
 		if (request.method !== "POST") {
@@ -332,7 +342,7 @@ export default {
 					rpc(body.id, {
 						protocolVersion: PROTOCOL_VERSION,
 						capabilities: { tools: {} },
-						serverInfo: { name: "semconv.watch", version: "1.0.0" },
+						serverInfo: { name: SITE.name, version: "1.0.0" },
 						instructions:
 							"Read-only access to the OpenTelemetry semantic conventions, specification and OTLP definitions, with their release histories. Reach for check_attribute_names before asserting that an attribute key is current, and search_requirements before asserting what the spec requires - the conventions rename keys every month and a model's training data is usually behind them. Note that the OTLP protocol specification lives in the opentelemetry-proto repository, not the specification one; both are covered.",
 					}),

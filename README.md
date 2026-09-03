@@ -1,4 +1,4 @@
-# semconv.watch
+# semconv.com
 
 A version-by-version record of the OpenTelemetry semantic conventions, specification and OTLP.
 Diffed at every release, committed, and rendered as a site plus a small JSON API and MCP server
@@ -85,6 +85,20 @@ while the binary format never notices.
 
 Upstream release notes use their own categories and the two do not always agree; both are shown on
 each release page.
+
+## Deploying
+
+One Worker in front of prerendered assets: `/mcp` is handled by
+[`src/mcp/worker.ts`](src/mcp/worker.ts), everything else is served from `dist/`, and the MCP tools
+read those same asset files through the `ASSETS` binding — so the API and the pages cannot drift.
+
+```bash
+bun run deploy   # build, then wrangler deploy
+```
+
+`wrangler.jsonc` declares `semconv.com` and `www.semconv.com` as custom domains, which requires the
+zone to be on Cloudflare with this account's nameservers. The Worker 301s `www` to the apex; every
+canonical URL, the feed and `llms.txt` point at the apex only.
 
 ## Data
 

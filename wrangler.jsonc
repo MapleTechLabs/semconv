@@ -1,6 +1,13 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "semconv-watch",
+	"name": "semconv",
+	// Custom domains, not routes: Cloudflare issues and renews the certificate
+	// and points the apex at the Worker. Both require semconv.com to be using
+	// Cloudflare nameservers on this account; `wrangler deploy` sets them up.
+	"routes": [
+		{ "pattern": "semconv.com", "custom_domain": true },
+		{ "pattern": "www.semconv.com", "custom_domain": true }
+	],
 	"main": "src/mcp/worker.ts",
 	"compatibility_date": "2026-09-01",
 	// The Worker exists only for /mcp; every other path is served straight from

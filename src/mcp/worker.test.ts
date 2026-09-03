@@ -25,7 +25,7 @@ const built = await Bun.file(`${process.cwd()}/dist/api/attributes.json`).exists
 
 const call = async (name: string, args: Record<string, unknown> = {}) => {
 	const response = await worker.fetch(
-		new Request("https://semconv.watch/mcp", {
+		new Request("https://semconv.com/mcp", {
 			method: "POST",
 			body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
 		}),
@@ -38,7 +38,7 @@ const call = async (name: string, args: Record<string, unknown> = {}) => {
 describe.skipIf(!built)("mcp worker", () => {
 	test("initialize advertises tools", async () => {
 		const response = await worker.fetch(
-			new Request("https://semconv.watch/mcp", {
+			new Request("https://semconv.com/mcp", {
 				method: "POST",
 				body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize" }),
 			}),
@@ -50,7 +50,7 @@ describe.skipIf(!built)("mcp worker", () => {
 
 	test("tools/list names every tool", async () => {
 		const response = await worker.fetch(
-			new Request("https://semconv.watch/mcp", {
+			new Request("https://semconv.com/mcp", {
 				method: "POST",
 				body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" }),
 			}),
@@ -171,7 +171,13 @@ describe.skipIf(!built)("mcp worker", () => {
 	})
 
 	test("non-mcp paths fall through to the static site", async () => {
-		const response = await worker.fetch(new Request("https://semconv.watch/api/versions.json"), env)
+		const response = await worker.fetch(new Request("https://semconv.com/api/versions.json"), env)
 		expect(response.status).toBe(200)
+	})
+
+	test("www redirects to the apex, preserving the path", async () => {
+		const response = await worker.fetch(new Request("https://www.semconv.com/attributes/db.query.text"), env)
+		expect(response.status).toBe(301)
+		expect(response.headers.get("location")).toBe("https://semconv.com/attributes/db.query.text")
 	})
 })

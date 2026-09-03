@@ -34,6 +34,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />
 		<link rel="canonical" href={new URL(path, Astro.site)} />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="alternate" type="application/rss+xml" title={`${SITE.name} — all changes`} href="/feed.xml" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

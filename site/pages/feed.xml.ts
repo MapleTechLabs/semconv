@@ -7,7 +7,7 @@ const escape = (s: string) =>
 
 export const GET: APIRoute = async ({ site }) => {
 	const data = await catalog()
-	const origin = site?.origin ?? `https://${SITE.name}`
+	const origin = site?.origin ?? SITE.origin
 
 	const items = data.feed.map(({ source, version, diff, release }) => {
 		const significant = diff.changes.filter((c) => c.severity !== "informational")

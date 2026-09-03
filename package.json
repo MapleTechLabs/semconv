@@ -14,6 +14,7 @@
 		"worker:dev": "bun run build && wrangler dev"
 	},
 	"dependencies": {
+		"@astrojs/sitemap": "^3.7.4",
 		"@effect/platform": "^0.97.1",
 		"@effect/platform-bun": "^0.91.2",
 		"@tailwindcss/vite": "^4.3.3",
