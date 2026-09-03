@@ -1,50 +1,10 @@
+import { type Change, type EntityKind, type Severity, type SourceDiff, sortChanges, tally, truncate } from "./change.ts"
 import type { Attribute, Deprecation, MetricDef, SemconvSnapshot, SignalDef, Stability } from "./types.ts"
 
-export type ChangeKind =
-	| "added"
-	| "removed"
-	| "renamed"
-	| "deprecated"
-	| "undeprecated"
-	| "stability-changed"
-	| "type-changed"
-	| "unit-changed"
-	| "instrument-changed"
-	| "enum-members-changed"
-	| "brief-changed"
-	| "note-changed"
-	| "examples-changed"
+export type { Change, ChangeKind, EntityKind, Severity } from "./change.ts"
 
-/**
- * Every release touches a hundred things and breaks two. The severity split is
- * the whole reason this is readable: `breaking` means a backend or an
- * instrumentation author has work to do, `notable` means read it, and
- * `informational` is wording.
- */
-export type Severity = "breaking" | "notable" | "informational"
-
-export type EntityKind = "attribute" | "metric" | "signal"
-
-export interface Change {
-	readonly kind: ChangeKind
-	readonly severity: Severity
-	readonly entity: EntityKind
-	readonly id: string
-	/** Stability of the entity in the newer snapshot (or the older one, if removed). */
-	readonly stability: Stability
-	readonly detail: string
-	readonly from?: string
-	readonly to?: string
-	/** For renames: the successor id, so consumers do not have to parse `detail`. */
-	readonly renamedTo?: string
-}
-
-export interface SemconvDiff {
+export interface SemconvDiff extends SourceDiff {
 	readonly source: "semconv"
-	readonly from: string
-	readonly to: string
-	readonly changes: readonly Change[]
-	readonly counts: Readonly<Record<Severity, number>>
 }
 
 const isStable = (s: Stability) => s === "stable" || s === "release_candidate"
@@ -73,8 +33,6 @@ const STABILITY_RANK: Record<string, number> = {
 }
 
 const depKey = (d: Deprecation | undefined) => (d ? `${d.reason}${d.renamedTo ? `->${d.renamedTo}` : ""}` : "")
-
-const truncate = (s: string, n = 160) => (s.length <= n ? s : `${s.slice(0, n - 1)}...`)
 
 interface Common {
 	readonly id: string
@@ -203,23 +161,6 @@ const enumKey = (a: Attribute) =>
 		.sort()
 		.join(",")
 
-const SEVERITY_ORDER: Record<Severity, number> = { breaking: 0, notable: 1, informational: 2 }
-const KIND_ORDER: ChangeKind[] = [
-	"removed",
-	"renamed",
-	"deprecated",
-	"type-changed",
-	"unit-changed",
-	"instrument-changed",
-	"stability-changed",
-	"enum-members-changed",
-	"undeprecated",
-	"added",
-	"note-changed",
-	"brief-changed",
-	"examples-changed",
-]
-
 export function diffSemconv(before: SemconvSnapshot, after: SemconvSnapshot): SemconvDiff {
 	const attrsBefore = new Map(before.attributes.map((a) => [a.id, a]))
 	const attrsAfter = new Map(after.attributes.map((a) => [a.id, a]))
@@ -304,17 +245,8 @@ export function diffSemconv(before: SemconvSnapshot, after: SemconvSnapshot): Se
 		}
 	}
 
-	changes.sort(
-		(x, y) =>
-			SEVERITY_ORDER[x.severity] - SEVERITY_ORDER[y.severity] ||
-			KIND_ORDER.indexOf(x.kind) - KIND_ORDER.indexOf(y.kind) ||
-			x.id.localeCompare(y.id),
-	)
-
-	const counts = { breaking: 0, notable: 0, informational: 0 }
-	for (const c of changes) counts[c.severity]++
-
-	return { source: "semconv", from: before.version, to: after.version, changes, counts }
+	sortChanges(changes)
+	return { source: "semconv", from: before.version, to: after.version, changes, counts: tally(changes) }
 }
 
 export type { Attribute, MetricDef, SignalDef }

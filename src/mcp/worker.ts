@@ -28,7 +28,7 @@ const TOOLS = [
 	{
 		name: "list_versions",
 		description:
-			"List every tracked release of the OpenTelemetry semantic conventions, newest first, with publication dates and how many breaking, notable and editorial changes each one introduced.",
+			"List every tracked release of all three OpenTelemetry sources - semantic conventions, the specification, and OTLP - newest first, with publication dates and how many breaking, notable and editorial changes each one introduced.",
 		inputSchema: { type: "object", properties: {}, additionalProperties: false },
 	},
 	{
@@ -77,15 +77,54 @@ const TOOLS = [
 	{
 		name: "diff_versions",
 		description:
-			"What changed in the semantic conventions between two tracked versions: renames, deprecations, stability promotions, removals and metric shape changes, each ranked breaking / notable / informational.",
+			"What changed between two tracked versions of one source. For semconv: renames, deprecations, promotions, removals, metric shape changes. For spec: RFC 2119 requirements added, dropped, moved or restrengthened. For proto: fields added, removed, renumbered or retyped. Each ranked breaking / notable / informational.",
 		inputSchema: {
 			type: "object",
 			properties: {
+				source: {
+					type: "string",
+					enum: ["semconv", "spec", "proto"],
+					description: "Which source to diff. Default \"semconv\".",
+				},
 				from: { type: "string", description: "Older version, e.g. \"1.40.0\"." },
 				to: { type: "string", description: "Newer version, e.g. \"1.44.0\"." },
 				include_editorial: { type: "boolean", description: "Include wording-only changes. Default false." },
 			},
 			required: ["from", "to"],
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "search_requirements",
+		description:
+			"Search the RFC 2119 requirements of the OpenTelemetry specification and the OTLP protocol document - the sentences that actually bind an implementation. Use this to check behaviour against the spec rather than recalling it. Note the OTLP protocol spec is not in the specification repository; both are covered here.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				query: { type: "string", description: "Substring to match against requirement text, e.g. \"partial_success\"." },
+				level: {
+					type: "string",
+					description: "Restrict to one RFC 2119 level, e.g. \"MUST\" or \"SHOULD NOT\".",
+				},
+				section: { type: "string", description: "Restrict to sections whose path contains this, e.g. \"trace/sdk\"." },
+				limit: { type: "number", description: "Maximum results, default 40." },
+			},
+			additionalProperties: false,
+		},
+	},
+	{
+		name: "get_otlp_message",
+		description:
+			"One OTLP wire definition in full: every field with its number, type and cardinality, or every value of an enum. Field numbers are what binary OTLP keys on and field names are what OTLP/JSON keys on, so both matter.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				name: {
+					type: "string",
+					description: "Message or enum name, fully qualified or not, e.g. \"Span\" or \"opentelemetry.proto.trace.v1.Span\".",
+				},
+			},
+			required: ["name"],
 			additionalProperties: false,
 		},
 	},
@@ -188,18 +227,61 @@ async function callTool(name: string, args: Json, env: Env, origin: string) {
 		}
 
 		case "diff_versions": {
+			const source = String(args?.source ?? "semconv")
 			const from = String(args?.from ?? "").replace(/^v/, "")
 			const to = String(args?.to ?? "").replace(/^v/, "")
-			const diff = await asset(env, `/api/diff/${from}...${to}.json`, origin)
+			const diff = await asset(env, `/api/diff/${source}/${from}...${to}.json`, origin)
 			if (!diff) {
 				return text({
-					error: `No diff for v${from} to v${to}. Versions must both be tracked, and \`from\` must be the older one - call list_versions.`,
+					error: `No ${source} diff for v${from} to v${to}. Both versions must be tracked for that source, and \`from\` must be the older one - call list_versions.`,
 				})
 			}
 			const changes = args?.include_editorial
 				? diff.changes
 				: diff.changes.filter((c: Json) => c.severity !== "informational")
 			return text({ ...diff, changes })
+		}
+
+		case "search_requirements": {
+			const all = await asset(env, "/api/requirements.json", origin)
+			if (!all) return text({ error: "requirements unavailable" })
+			const query = String(args?.query ?? "").toLowerCase()
+			const level = args?.level ? String(args.level).toUpperCase() : undefined
+			const section = args?.section ? String(args.section).toLowerCase() : undefined
+			const limit = Math.min(Number(args?.limit ?? 40) || 40, 200)
+
+			const matches = all.requirements
+				.filter((r: Json) => !level || r.level === level)
+				.filter((r: Json) => !section || r.section.toLowerCase().includes(section))
+				.filter((r: Json) => query === "" || r.text.toLowerCase().includes(query))
+
+			return text({
+				specVersion: all.specVersion,
+				protoVersion: all.protoVersion,
+				matched: matches.length,
+				returned: Math.min(matches.length, limit),
+				requirements: matches.slice(0, limit),
+			})
+		}
+
+		case "get_otlp_message": {
+			const wanted = String(args?.name ?? "")
+			const otlp = await asset(env, "/api/otlp.json", origin)
+			if (!otlp) return text({ error: "OTLP definitions unavailable" })
+			// Accept a bare name so a caller does not have to know the package path.
+			const found =
+				otlp.messages.find((m: Json) => m.name === wanted) ??
+				otlp.messages.find((m: Json) => m.name.endsWith(`.${wanted}`))
+			if (!found) {
+				return text({
+					error: `No OTLP message or enum named \`${wanted}\`.`,
+					didYouMean: otlp.messages
+						.filter((m: Json) => m.name.toLowerCase().includes(wanted.toLowerCase()))
+						.slice(0, 10)
+						.map((m: Json) => m.name),
+				})
+			}
+			return text({ version: otlp.version, message: found })
 		}
 
 		default:
@@ -252,7 +334,7 @@ export default {
 						capabilities: { tools: {} },
 						serverInfo: { name: "semconv.watch", version: "1.0.0" },
 						instructions:
-							"Read-only access to the OpenTelemetry semantic conventions and their release history. Reach for check_attribute_names before asserting that an attribute key is current - the registry deprecates and renames keys every month, and a model's training data is usually behind it.",
+							"Read-only access to the OpenTelemetry semantic conventions, specification and OTLP definitions, with their release histories. Reach for check_attribute_names before asserting that an attribute key is current, and search_requirements before asserting what the spec requires - the conventions rename keys every month and a model's training data is usually behind them. Note that the OTLP protocol specification lives in the opentelemetry-proto repository, not the specification one; both are covered.",
 					}),
 				)
 

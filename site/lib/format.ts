@@ -89,6 +89,20 @@ const KIND_LABEL: Record<string, string> = {
 	"note-changed": "guidance",
 	"examples-changed": "examples",
 	"first-seen": "added",
+	"requirement-added": "new rule",
+	"requirement-removed": "rule dropped",
+	"requirement-reworded": "reworded",
+	"requirement-moved": "moved",
+	"requirement-level-changed": "strength",
+	"section-rewritten": "rewritten",
+	"field-added": "field added",
+	"field-removed": "field removed",
+	"field-renamed": "field renamed",
+	"field-type-changed": "field type",
+	"field-number-changed": "renumbered",
+	"field-label-changed": "cardinality",
+	"value-added": "value added",
+	"value-removed": "value removed",
 }
 
 export const kindLabel = (kind: string) => KIND_LABEL[kind] ?? kind

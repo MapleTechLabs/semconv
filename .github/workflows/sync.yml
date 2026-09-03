@@ -36,30 +36,35 @@ jobs:
             echo "any=false" >> "$GITHUB_OUTPUT"
           else
             echo "any=true" >> "$GITHUB_OUTPUT"
-            echo "versions=$(git diff --name-only -- data/semconv | sed 's#.*/##; s#\.json\.gz##' | paste -sd, -)" >> "$GITHUB_OUTPUT"
+            echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed 's#data/##; s#/#  v#; s#\.json\.gz##' | paste -sd', ' -)" >> "$GITHUB_OUTPUT"
           fi
 
       # The tests assert against real releases, so a new snapshot that breaks
       # them means the normalizer no longer understands upstream's model - the
       # PR should exist and fail loudly rather than not exist at all.
-      - name: Test
+      # Build first: the MCP worker tests read dist/. The tests assert against
+      # real releases, so a new snapshot that breaks them means a normalizer no
+      # longer understands upstream - the PR should exist and fail loudly rather
+      # than not exist at all.
+      - name: Build and test
         if: steps.changed.outputs.any == 'true'
-        run: bun run test
+        run: bun run build && bun run test
         continue-on-error: true
 
       - name: Open pull request
         if: steps.changed.outputs.any == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: sync/semconv
-          title: "data: semantic conventions ${{ steps.changed.outputs.versions }}"
-          commit-message: "data: ingest semantic conventions ${{ steps.changed.outputs.versions }}"
+          branch: sync/upstream
+          title: "data: ${{ steps.changed.outputs.versions }}"
+          commit-message: "data: ingest ${{ steps.changed.outputs.versions }}"
           body: |
-            Automated ingest of newly published semantic-conventions releases.
+            Automated ingest of newly published upstream releases.
 
-            Review the diff engine output before merging — if the test job failed,
-            upstream has changed the model in a way the normalizer does not yet
-            understand, and merging would publish wrong history.
+            Review the diff output before merging. If the test job failed, upstream
+            has changed a model, a document layout or the proto grammar in a way a
+            normalizer does not yet understand, and merging would publish wrong
+            history.
           add-paths: data
 
   # A silent scheduled job is indistinguishable from a broken one, so failure

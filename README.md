@@ -1,21 +1,31 @@
 # semconv.watch
 
-A version-by-version record of the OpenTelemetry semantic conventions: every attribute, metric and
-signal, when it was added, promoted, deprecated or renamed — and what replaced it.
-
-The conventions publish a machine-readable registry in which every deprecated attribute names its
-successor. That makes the registry diffable. This repository diffs it at every release, commits the
-result, and renders it as a site plus a small JSON API meant to be read by agents as much as people.
+A version-by-version record of the OpenTelemetry semantic conventions, specification and OTLP.
+Diffed at every release, committed, and rendered as a site plus a small JSON API and MCP server
+meant to be read by agents as much as by people.
 
 ## Why
 
-`opentelemetry.io/docs/specs` is prose spread across separately-versioned repositories. It answers
-"what does the spec say today" and nothing else. The questions that actually come up building a
-backend are different:
+`opentelemetry.io/docs/specs` answers "what does the spec say today" and nothing else. The
+questions that actually come up building a backend are different:
 
 - What changed between the version I read and today?
 - Is `db.statement` still a thing, and what replaced it?
-- When did `deployment.environment` get deprecated?
+- Which MUSTs appeared in a stable document since we shipped?
+- Did a field number move on the wire?
+
+## Three sources, three methods
+
+| Source | Read as |
+| ------ | ------- |
+| `semantic-conventions` | Its machine-readable registry — every attribute carries a stability level and, when deprecated, the name of its successor. |
+| `opentelemetry-specification` | Its RFC 2119 requirements. Each MUST/SHOULD/MAY is extracted and hashed, so a new requirement is distinguishable from a reflowed paragraph. Requirements that move between sections are matched across. |
+| `opentelemetry-proto` | The `.proto` files themselves — messages, field numbers, types, cardinality, enum values, retired numbers — plus the protocol prose. |
+
+**The OTLP protocol specification is not in the specification repository.**
+`specification/protocol/otlp.md` is a stub redirecting to the website; the real 800-line document
+ships in `docs/specification.md` of `opentelemetry-proto`. Anything auditing an OTLP server needs
+that file, and it is easy to miss.
 
 ## Layout
 
@@ -23,7 +33,8 @@ backend are different:
 | ------------------------- | -------------------------------------------------------------- |
 | `src/ingest/`             | Effect CLI: fetch upstream tags, normalize, write `data/`       |
 | `src/model/types.ts`      | The normalized snapshot shape                                   |
-| `src/model/diff.ts`       | The diff engine — pure, and the most heavily tested part        |
+| `src/model/change.ts`     | The change vocabulary all three differs share                   |
+| `src/model/diff*.ts`      | The diff engines — pure, and the most heavily tested part       |
 | `src/model/catalog.ts`    | Build-time aggregation: lifecycles, renames, consecutive diffs  |
 | `site/`                   | Astro site (`srcDir`), prerendered to `dist/`                   |
 | `data/`                   | Committed, gzipped per-version snapshots                        |
@@ -45,11 +56,11 @@ changed" is a reliable signal that upstream moved.
 
 ## Two model formats
 
-Upstream is mid-migration between `definition/1` (one flat `groups:` list) and `definition/2`
-(typed top-level sections, `key:` instead of `id:`, `ref_group:` instead of `extends:`). Both are
-read. This is not a detail: v1.44.0 moved `server.*`, `client.*`, `source.*`, `destination.*` and
-every `hw.*` metric to the newer format, and a format-1-only reader reports all of them as deleted
-from the registry.
+The conventions are mid-migration between `definition/1` (one flat `groups:` list) and
+`definition/2` (typed top-level sections, `key:` instead of `id:`, `ref_group:` instead of
+`extends:`). Both are read. This is not a detail: v1.44.0 moved `server.*`, `client.*`, `source.*`,
+`destination.*` and every `hw.*` metric to the newer format, and a format-1-only reader reports all
+of them as deleted from the registry.
 
 ## For agents
 
@@ -63,17 +74,23 @@ emits and it reports which are deprecated, renamed, or absent from the registry.
 
 ## Severity
 
-A change is `breaking` when it removes, renames or walks back a definition already marked `stable`
-or `release_candidate` — the tier where the conventions promise not to do that. The same change on
-a `development` definition is `notable`. Wording, examples and guidance are `informational`.
+`breaking` means: for the conventions, removing or renaming something already marked `stable` or
+`release_candidate`; for the specification, adding, dropping or restrengthening a requirement in a
+document marked Stable; for OTLP, changing an existing field in a released package. The same change
+on a `development` definition is `notable`. Wording, examples and guidance are `informational`.
+
+Both OTLP encodings are load-bearing, which is why nearly any change to an existing field counts:
+binary keys on the field *number*, JSON keys on the field *name*. A rename breaks every JSON client
+while the binary format never notices.
 
 Upstream release notes use their own categories and the two do not always agree; both are shown on
 each release page.
 
 ## Data
 
-Snapshots start at semconv v1.30.0. Earlier releases used a model schema different enough that
-diffing across it would report changes the project never made.
+Snapshots start at semconv v1.30.0, specification v1.42.0 and OTLP v1.4.0. Earlier releases used
+schemas and layouts different enough that diffing across them would report changes the projects
+never made.
 
 Source data is © the OpenTelemetry Authors, licensed Apache-2.0. This is an independent project and
 is not affiliated with the OpenTelemetry project, the CNCF, or the Linux Foundation.

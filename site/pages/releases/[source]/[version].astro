@@ -1,28 +1,38 @@
 ---
-import ChangeList from "../../components/ChangeList.astro"
-import Pill from "../../components/Pill.astro"
-import Shell from "../../layouts/Shell.astro"
-import { catalog } from "../../../src/model/catalog.ts"
-import { formatDate, SEVERITY_LABEL, severityClass } from "../../lib/format.ts"
-import type { Severity } from "../../../src/model/diff.ts"
+import ChangeList from "../../../components/ChangeList.astro"
+import Pill from "../../../components/Pill.astro"
+import Shell from "../../../layouts/Shell.astro"
+import { catalog, SOURCES, SOURCE_LABEL } from "../../../../src/model/catalog.ts"
+import type { Severity } from "../../../../src/model/change.ts"
+import type { SourceId } from "../../../../src/model/types.ts"
+import { formatDate, SEVERITY_LABEL, severityClass } from "../../../lib/format.ts"
 
 export async function getStaticPaths() {
 	const data = await catalog()
-	return data.diffs.map((diff) => ({ params: { version: diff.to }, props: { diff } }))
+	return SOURCES.flatMap((source) =>
+		data.source(source).diffs.map((diff) => ({ params: { source, version: diff.to }, props: { diff, source } })),
+	)
 }
 
-const { diff } = Astro.props
+const { diff, source } = Astro.props as { diff: import("../../../../src/model/change.ts").SourceDiff; source: SourceId }
 const data = await catalog()
+const catalogue = data.source(source)
 
-const release = data.releases.find((r) => r.version === diff.to)
+const release = catalogue.release(diff.to)
 const linkable = new Set(data.attributes.map((a) => a.id))
-const index = data.diffs.findIndex((d) => d.to === diff.to)
-const newer = index > 0 ? data.diffs[index - 1] : undefined
-const older = data.diffs[index + 1]
+const index = catalogue.diffs.findIndex((d) => d.to === diff.to)
+const newer = index > 0 ? catalogue.diffs[index - 1] : undefined
+const older = catalogue.diffs[index + 1]
 
 const sections = (["breaking", "notable", "informational"] as Severity[])
 	.map((severity) => ({ severity, changes: diff.changes.filter((c) => c.severity === severity) }))
 	.filter((section) => section.changes.length > 0)
+
+const BREAKING_BLURB: Record<SourceId, string> = {
+	semconv: "Changes to definitions the project had already marked stable or release candidate.",
+	spec: "Requirements added to, removed from, or restrengthened in a document marked Stable.",
+	proto: "Changes to a released wire definition. Development packages are ranked notable instead.",
+}
 
 /**
  * The upstream body is Markdown we do not control, so it is never rendered as
@@ -48,13 +58,16 @@ const upstreamBullets = (release?.body ?? "")
 ---
 
 <Shell
-	title={`Semantic conventions v${diff.to}`}
-	description={`What changed in OpenTelemetry semantic conventions v${diff.to}: ${diff.counts.breaking} breaking, ${diff.counts.notable} notable and ${diff.counts.informational} editorial changes since v${diff.from}.`}
+	title={`${SOURCE_LABEL[source]} v${diff.to}`}
+	description={`What changed in OpenTelemetry ${SOURCE_LABEL[source].toLowerCase()} v${diff.to}: ${diff.counts.breaking} breaking, ${diff.counts.notable} notable and ${diff.counts.informational} editorial changes since v${diff.from}.`}
 >
 	<nav class="text-[13px] text-faint"><a href="/">Changes</a></nav>
 
 	<div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-		<h1 class="m-0 font-mono text-[1.7rem] font-semibold tracking-tight">v{diff.to}</h1>
+		<h1 class="m-0 text-[1.7rem] font-semibold tracking-tight">
+			<span class="text-muted font-normal text-[0.8em]">{SOURCE_LABEL[source]}</span>
+			<span class="font-mono">v{diff.to}</span>
+		</h1>
 		{
 			release && (
 				<time class="text-[13.5px] text-faint" datetime={release.publishedAt}>
@@ -104,19 +117,17 @@ const upstreamBullets = (release?.body ?? "")
 					<span class="text-[13px] font-normal text-faint">{section.changes.length}</span>
 				</h2>
 				{section.severity === "breaking" && (
-					<p class="mt-1 mb-0 text-[13.5px] text-muted max-w-[68ch]">
-						Changes to definitions the project had already marked stable or release candidate.
-					</p>
+					<p class="mt-1 mb-0 text-[13.5px] text-muted max-w-[68ch]">{BREAKING_BLURB[source]}</p>
 				)}
 				<div class="mt-2">
-					<ChangeList changes={section.changes} linkable={linkable} />
+					<ChangeList changes={section.changes} linkable={linkable} source={source} tag={`v${diff.to}`} />
 				</div>
 			</section>
 		))
 	}
 
 	<nav class="mt-12 flex justify-between gap-4 border-t border-rule pt-4 text-[13.5px]">
-		<span>{older && <a href={`/releases/${older.to}`}>&larr; v{older.to}</a>}</span>
-		<span>{newer && <a href={`/releases/${newer.to}`}>v{newer.to} &rarr;</a>}</span>
+		<span>{older && <a href={`/releases/${source}/${older.to}`}>&larr; v{older.to}</a>}</span>
+		<span>{newer && <a href={`/releases/${source}/${newer.to}`}>v{newer.to} &rarr;</a>}</span>
 	</nav>
 </Shell>

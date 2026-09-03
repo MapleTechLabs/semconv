@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
 	})
 	return json({
 		source: "semconv",
-		version: data.latest.version,
+		version: data.semconv.latest.version,
 		count: renames.length,
 		renames: renames.sort((a, b) => a.from.localeCompare(b.from)),
 	})

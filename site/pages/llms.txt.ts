@@ -4,83 +4,108 @@ import { SITE } from "../lib/site.ts"
 
 /**
  * Written for a coding agent that has landed here mid-task, usually asking one
- * of two questions: "is this attribute still current" or "what broke between
- * these two versions". Both are answered by a single JSON fetch, so the file
- * leads with those rather than with a tour of the site.
+ * of three questions: is this attribute name still current, what changed since
+ * the version we targeted, and what does the spec actually require. Each is
+ * answered by a single fetch, so the file leads with those rather than with a
+ * tour of the site.
  */
 export const GET: APIRoute = async ({ site }) => {
 	const data = await catalog()
 	const origin = site?.origin ?? `https://${SITE.name}`
-	const latest = data.latest.version
-	const oldest = data.versions.at(-1)
+
+	const semconv = data.semconv
+	const spec = data.spec
+	const proto = data.proto
+	const requirements = spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
 
 	const body = `# ${SITE.name}
 
 > ${SITE.description}
 
-Derived from the OpenTelemetry semantic conventions registry (${SITE.repo}), which is
-Apache-2.0 licensed. Independent project, built by ${SITE.builder}. Not affiliated with the
-OpenTelemetry project or the CNCF.
+Derived from three OpenTelemetry repositories, all Apache-2.0 licensed: semantic-conventions,
+opentelemetry-specification, and opentelemetry-proto. Independent project, built by ${SITE.builder}.
+Not affiliated with the OpenTelemetry project or the CNCF.
 
-Currently tracking semantic conventions v${oldest} through v${latest}
-(${data.attributes.length} attributes, ${data.metrics.length} metrics, ${data.renames.size} known renames).
+Currently tracking:
+- Semantic conventions v${semconv.versions.at(-1)} to v${semconv.latest.version} - ${semconv.latest.attributes.length} attributes, ${semconv.latest.metrics.length} metrics, ${data.renames.size} known renames
+- Specification v${spec.versions.at(-1)} to v${spec.latest.version} - ${spec.latest.documents.length} documents, ${requirements} RFC 2119 requirements
+- OTLP v${proto.versions.at(-1)} to v${proto.latest.version} - ${proto.latest.messages.length} wire definitions plus the protocol requirements
 
-## Answering the two common questions
+## Answering the three common questions
 
 **"Is this attribute name still current?"**
-Fetch ${origin}/api/renames.json — every deprecated attribute with the name that replaced it and
-the release that did it. It is small enough to hold in context while auditing a codebase. An id
-absent from that list is either current or was deprecated without a successor; ${origin}/api/attributes.json
-distinguishes the two via each entry's \`deprecated\` field.
+Fetch ${origin}/api/renames.json - every deprecated attribute with the name that replaced it and
+the release that did it. Small enough to hold in context while auditing a codebase. An id absent
+from that list is either current or was deprecated without a successor;
+${origin}/api/attributes.json distinguishes the two via each entry's \`deprecated\` field.
 
 **"What changed between the version we targeted and now?"**
-Fetch ${origin}/api/diff/FROM...TO.json for any ordered pair of tracked versions, e.g.
-${origin}/api/diff/${oldest}...${latest}.json. Each change carries \`kind\`, \`severity\`,
-\`entity\`, \`id\`, \`detail\`, and \`renamedTo\` where a successor is known.
+Fetch ${origin}/api/diff/{source}/{from}...{to}.json for any ordered pair of tracked versions of
+any source, e.g. ${origin}/api/diff/semconv/${semconv.versions.at(-1)}...${semconv.latest.version}.json.
+Each change carries \`kind\`, \`severity\`, \`entity\`, \`id\`, \`detail\`, and \`renamedTo\` where a
+successor is known.
+
+**"What does the spec actually require here?"**
+Fetch ${origin}/api/requirements.json - every MUST, SHOULD and MAY in the current specification and
+in the OTLP protocol document, each with its section and that document's stability status. Note
+that the OTLP protocol specification is NOT in the specification repository: it lives in
+\`docs/specification.md\` of opentelemetry-proto, and \`specification/protocol/otlp.md\` is a stub
+that redirects to the website. Both are covered here.
 
 ## MCP
 
 ${origin}/mcp is a public, read-only MCP server (streamable HTTP, no auth, no session state).
-Tools: list_versions, check_attribute_names, get_attribute, search_attributes, diff_versions.
+Tools: list_versions, check_attribute_names, get_attribute, search_attributes, diff_versions,
+search_requirements, get_otlp_message.
 check_attribute_names takes the attribute keys a codebase emits and reports which are deprecated,
 renamed, or absent from the registry - use it instead of answering from training data.
 
 ## Endpoints
 
-- ${origin}/api/versions.json — tracked releases with publication dates and change counts
-- ${origin}/api/attributes.json — every attribute at v${latest} with type, stability and deprecation
-- ${origin}/api/attributes/{id}.json — one attribute in full, plus its release-by-release history
-- ${origin}/api/renames.json — deprecated name to successor name
-- ${origin}/api/diff/{from}...{to}.json — changes between any two tracked versions
-- ${origin}/feed.xml — RSS, one entry per release
+- ${origin}/api/versions.json - every tracked release of all three sources, with change counts
+- ${origin}/api/attributes.json - every semantic-conventions attribute at v${semconv.latest.version}
+- ${origin}/api/attributes/{id}.json - one attribute in full, plus its release-by-release history
+- ${origin}/api/renames.json - deprecated attribute name to successor name
+- ${origin}/api/requirements.json - every RFC 2119 requirement in the spec and in OTLP
+- ${origin}/api/otlp.json - OTLP messages, fields, field numbers and enum values
+- ${origin}/api/diff/{source}/{from}...{to}.json - changes between any two tracked versions
+- ${origin}/feed.xml - RSS, one entry per release across all three sources
 
 ## Pages
 
-- ${origin}/ — release history, newest first
-- ${origin}/attributes — the full registry, filterable
-- ${origin}/attributes/{id} — one attribute, its definition, its usage, and its history
-- ${origin}/releases/{version} — everything that changed in one release
-- ${origin}/diff — compare any two versions
-- ${origin}/about — how the data is produced, and what it does not cover
+- ${origin}/ - release history across all three sources, newest first
+- ${origin}/attributes - the semantic-conventions registry, filterable
+- ${origin}/attributes/{id} - one attribute, its definition, its usage, and its history
+- ${origin}/spec - specification documents and their requirements
+- ${origin}/otlp - the OTLP wire definitions
+- ${origin}/releases/{source}/{version} - everything that changed in one release
+- ${origin}/diff - compare any two versions
+- ${origin}/about - how the data is produced, and what it does not cover
 
 ## How to read \`severity\`
 
-- \`breaking\` — removes, renames or walks back something already marked stable or release
-  candidate, the tier where the conventions promise not to do that.
-- \`notable\` — the same class of change on a development-stability definition. Expected churn,
+- \`breaking\` - for semantic conventions, removes or renames something already marked stable or
+  release candidate; for the specification, adds, drops or restrengthens a requirement in a
+  document marked Stable; for OTLP, changes an existing field in a released (non-development)
+  package. Both OTLP encodings are load-bearing: binary keys on the field number, JSON keys on the
+  field name, so a rename breaks JSON clients even though the binary format never notices.
+- \`notable\` - the same class of change on a development-stability definition. Expected churn,
   but it will still move data.
-- \`informational\` — wording, examples and guidance. No effect on emitted telemetry.
+- \`informational\` - wording, examples and guidance. No effect on emitted telemetry.
 
 Upstream release notes use their own categories and the two do not always agree; both are shown
 on each release page.
 
 ## Caveats worth passing on
 
-- History starts at v${oldest}. An attribute reported as first seen there may be considerably older.
+- History starts at semconv v${semconv.versions.at(-1)}, spec v${spec.versions.at(-1)}, OTLP
+  v${proto.versions.at(-1)}. Anything reported as first seen there may be considerably older.
 - Deprecated attributes remain in the registry. A deprecated name still resolves, so a consumer
   usually has to read both the old and new spelling until instrumentation catches up.
-- Only the semantic conventions are covered — not the OpenTelemetry specification prose and not
-  the OTLP protocol definitions.
+- Specification changes are tracked as RFC 2119 requirements, not as prose diffs. A paragraph
+  rewritten without changing what it requires will show as editorial.
+- Only \`specification/\` is read from the specification repository. \`oteps/\`, \`development/\` and
+  \`supplementary-guidelines/\` are proposals and commentary, and their MUSTs do not bind anyone.
 `
 
 	return new Response(body, { headers: { "content-type": "text/plain; charset=utf-8" } })

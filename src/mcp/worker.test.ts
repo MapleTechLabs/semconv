@@ -61,8 +61,10 @@ describe.skipIf(!built)("mcp worker", () => {
 			"check_attribute_names",
 			"diff_versions",
 			"get_attribute",
+			"get_otlp_message",
 			"list_versions",
 			"search_attributes",
+			"search_requirements",
 		])
 	})
 
@@ -120,6 +122,47 @@ describe.skipIf(!built)("mcp worker", () => {
 		const full = await call("diff_versions", { from: "v1.43.0", to: "v1.44.0", include_editorial: true })
 		expect(lean.changes.length).toBeLessThan(full.changes.length)
 		expect(lean.changes.every((c: { severity: string }) => c.severity !== "informational")).toBe(true)
+	})
+
+	test("diff_versions reaches the specification and OTLP too", async () => {
+		const spec = await call("diff_versions", { source: "spec", from: "1.59.0", to: "1.60.0" })
+		expect(spec.source).toBe("spec")
+		expect(spec.changes.some((c: { entity: string }) => c.entity === "requirement")).toBe(true)
+
+		const proto = await call("diff_versions", { source: "proto", from: "1.10.0", to: "1.11.0" })
+		expect(proto.source).toBe("proto")
+	})
+
+	/**
+	 * The OTLP protocol specification is not in the specification repository -
+	 * it ships in `docs/specification.md` of opentelemetry-proto. If this stops
+	 * finding partial-success rules, that source has silently dropped out.
+	 */
+	test("search_requirements covers the OTLP protocol document", async () => {
+		const result = await call("search_requirements", { query: "partial_success", level: "MUST" })
+		expect(result.matched).toBeGreaterThan(0)
+		expect(result.requirements.every((r: { level: string }) => r.level === "MUST")).toBe(true)
+		expect(result.requirements.some((r: { source: string }) => r.source === "proto")).toBe(true)
+	})
+
+	test("search_requirements narrows by section path", async () => {
+		const result = await call("search_requirements", { section: "trace/sdk", limit: 500 })
+		expect(result.matched).toBeGreaterThan(0)
+		expect(result.requirements.every((r: { section: string }) => r.section.includes("trace/sdk"))).toBe(true)
+	})
+
+	test("get_otlp_message resolves a bare name and keeps field numbers", async () => {
+		const result = await call("get_otlp_message", { name: "Span" })
+		expect(result.message.name).toBe("opentelemetry.proto.trace.v1.Span")
+		const traceId = result.message.fields.find((f: { name: string }) => f.name === "trace_id")
+		expect(traceId.number).toBe(1)
+		expect(traceId.type).toBe("bytes")
+	})
+
+	test("get_otlp_message suggests alternatives instead of failing blankly", async () => {
+		const result = await call("get_otlp_message", { name: "DataPoint" })
+		expect(result.error).toBeDefined()
+		expect(result.didYouMean.length).toBeGreaterThan(0)
 	})
 
 	test("a backwards version pair explains itself instead of 500ing", async () => {

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { catalog } from "../../src/model/catalog.ts"
+import { catalog, SOURCE_LABEL } from "../../src/model/catalog.ts"
 import { SITE } from "../lib/site.ts"
 
 const escape = (s: string) =>
@@ -9,8 +9,7 @@ export const GET: APIRoute = async ({ site }) => {
 	const data = await catalog()
 	const origin = site?.origin ?? `https://${SITE.name}`
 
-	const items = data.diffs.map((diff) => {
-		const release = data.releases.find((r) => r.version === diff.to)
+	const items = data.feed.map(({ source, version, diff, release }) => {
 		const significant = diff.changes.filter((c) => c.severity !== "informational")
 		const lines = significant
 			.slice(0, 30)
@@ -24,9 +23,9 @@ export const GET: APIRoute = async ({ site }) => {
 			.join("\n")
 
 		return `	<item>
-		<title>Semantic conventions v${diff.to} — ${diff.counts.breaking} breaking, ${diff.counts.notable} notable</title>
-		<link>${origin}/releases/${diff.to}</link>
-		<guid isPermaLink="true">${origin}/releases/${diff.to}</guid>
+		<title>${SOURCE_LABEL[source]} v${version} — ${diff.counts.breaking} breaking, ${diff.counts.notable} notable</title>
+		<link>${origin}/releases/${source}/${version}</link>
+		<guid isPermaLink="true">${origin}/releases/${source}/${version}</guid>
 		<pubDate>${new Date(release?.publishedAt ?? Date.now()).toUTCString()}</pubDate>
 		<description>${escape(body)}</description>
 	</item>`

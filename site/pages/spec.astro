@@ -1,0 +1,145 @@
+---
+import Pill from "../components/Pill.astro"
+import Shell from "../layouts/Shell.astro"
+import { catalog, SOURCE_REPO } from "../../src/model/catalog.ts"
+import { inlineCode } from "../lib/format.ts"
+
+const data = await catalog()
+const snapshot = data.spec.latest
+const tag = `v${snapshot.version}`
+
+const STATUS_CLASS: Record<string, string> = {
+	Stable: "text-stable bg-stable-bg",
+	"Release Candidate": "text-rc bg-rc-bg",
+	Deprecated: "text-breaking bg-breaking-bg",
+	Mixed: "text-notable bg-notable-bg",
+}
+
+/** One row per document: its status and how much of it is binding. */
+const documents = snapshot.documents
+	.map((doc) => {
+		const sections = snapshot.sections.filter((section) => section.path === doc.path)
+		const statements = sections.flatMap((section) => section.normative)
+		return {
+			...doc,
+			area: (doc.path.split("/")[1] ?? "").replace(/\.md$/, ""),
+			sections: sections.length,
+			requirements: statements.length,
+			binding: statements.filter((s) => s.level.startsWith("MUST") || s.level.startsWith("SHALL")).length,
+		}
+	})
+	.filter((doc) => doc.requirements > 0)
+	.sort((a, b) => a.path.localeCompare(b.path))
+
+const areas = [...new Set(documents.map((doc) => doc.area))].sort()
+const totals = {
+	requirements: documents.reduce((n, doc) => n + doc.requirements, 0),
+	binding: documents.reduce((n, doc) => n + doc.binding, 0),
+}
+
+/**
+ * The requirements that changed most recently, which is what someone who
+ * already implemented the spec actually wants from this page.
+ */
+const recent = data.spec.diffs.slice(0, 3).flatMap((diff) =>
+	diff.changes
+		.filter((c) => c.entity === "requirement" && c.severity !== "informational")
+		.slice(0, 6)
+		.map((c) => ({ version: diff.to, change: c })),
+)
+---
+
+<Shell
+	title="Specification"
+	description={`The OpenTelemetry specification at v${snapshot.version}, indexed by its ${totals.requirements} RFC 2119 requirements: which documents are stable, and which requirements changed recently.`}
+	wide
+>
+	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Specification</h1>
+		<span class="text-[13.5px] text-faint">as of v{snapshot.version}</span>
+	</div>
+	<p class="mt-2 mb-0 text-muted max-w-[68ch]">
+		The specification is prose, so it is indexed here by the only part of it that binds an
+		implementation: its RFC 2119 requirements &mdash; {totals.requirements} of them across{" "}
+		{documents.length} documents, {totals.binding} of which are MUST or SHALL.
+	</p>
+
+	{
+		recent.length > 0 && (
+			<section class="mt-8">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+					Recently changed requirements
+				</h2>
+				<ul class="mt-2 m-0 list-none p-0">
+					{recent.map(({ version, change }) => (
+						<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
+							<a href={`/releases/spec/${version}`} class="font-mono text-[12.5px] text-muted shrink-0">
+								v{version}
+							</a>
+							<a
+								href={`${SOURCE_REPO.spec}/blob/v${version}/${change.href?.replace("#", "#")}`}
+								class="font-mono text-[12.5px] shrink-0"
+							>
+								{change.id.split("/").slice(-1)[0]}
+							</a>
+							<span class="text-[13.5px] text-muted basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	<section class="mt-10">
+		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+			<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Documents</h2>
+			<nav class="flex flex-wrap gap-x-3 gap-y-1 text-[12.5px] text-muted">
+				{
+					areas.map((area) => (
+						<a href={`#area-${area}`} class="no-underline hover:text-ink">
+							{area}
+						</a>
+					))
+				}
+			</nav>
+		</div>
+
+		{
+			areas.map((area) => (
+				<div id={`area-${area}`} class="mt-6">
+					<h3 class="m-0 text-[13.5px] font-semibold">{area}</h3>
+					<ul class="mt-1 m-0 list-none p-0">
+						{documents
+							.filter((doc) => doc.area === area)
+							.map((doc) => (
+								<li class="grid grid-cols-[minmax(0,26rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2">
+									<a
+										href={`${SOURCE_REPO.spec}/blob/${tag}/${doc.path}`}
+										class="font-mono text-[13px] no-underline hover:underline break-all"
+									>
+										{doc.path.replace("specification/", "")}
+									</a>
+									<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+										<Pill label={doc.status} class={STATUS_CLASS[doc.status] ?? "text-muted bg-rule/50"} />
+										<span class="text-[13px] text-muted">
+											{doc.requirements} requirements
+											{doc.binding > 0 && <span class="text-faint"> · {doc.binding} binding</span>}
+										</span>
+									</div>
+								</li>
+							))}
+					</ul>
+				</div>
+			))
+		}
+	</section>
+
+	<p class="mt-10 mb-0 text-[13px] text-faint max-w-[68ch]">
+		Documents with no requirements of their own (indexes, glossaries) are omitted. Only{" "}
+		<code class="font-mono">specification/</code> is read: <code class="font-mono">oteps/</code>,{" "}
+		<code class="font-mono">development/</code> and{" "}
+		<code class="font-mono">supplementary-guidelines/</code> are proposals and commentary, and their
+		MUSTs bind no one. The OTLP protocol specification is not in this repository at all &mdash; it is
+		covered under <a href="/otlp">OTLP</a>.
+	</p>
+</Shell>

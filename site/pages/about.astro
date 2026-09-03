@@ -11,19 +11,40 @@ const data = await catalog()
 
 	<div class="mt-6 flex flex-col gap-5 max-w-[68ch] text-[15px]">
 		<p class="m-0">
-			The OpenTelemetry semantic conventions are published as a set of YAML files in which every
-			attribute carries a stability level and, when deprecated, the name of whatever replaced it.
-			That makes the registry diffable. This site diffs it, release by release, and turns the result
-			into pages you can link to.
+			OpenTelemetry is three separately-versioned repositories, and each one has to be read
+			differently. This site reads all three at every release and turns the result into pages you can
+			link to.
+		</p>
+
+		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">Three sources, three methods</h2>
+		<p class="m-0">
+			<strong>Semantic conventions</strong> ship a machine-readable registry in which every attribute
+			carries a stability level and, when deprecated, the name of whatever replaced it. That makes
+			them diffable directly.
+		</p>
+		<p class="m-0">
+			<strong>The specification</strong> is prose, so it is indexed by the only part that binds an
+			implementation: its RFC&nbsp;2119 requirements. Each MUST, SHOULD and MAY is extracted and
+			identified by a hash of its text, which is what separates a new requirement from a reflowed
+			paragraph. Requirements that move between sections are matched across, so splitting a section
+			does not read as dropping everything in it.
+		</p>
+		<p class="m-0">
+			<strong>OTLP</strong> is parsed from the{" "}
+			<code class="font-mono text-[0.92em]">.proto</code> files themselves &mdash; messages, field
+			numbers, types, cardinality, enum values and retired numbers. The protocol prose is tracked
+			alongside them, because it is not in the specification repository:{" "}
+			<code class="font-mono text-[0.92em]">specification/protocol/otlp.md</code> is a stub that
+			redirects to the website, and the real document lives in{" "}
+			<code class="font-mono text-[0.92em]">docs/specification.md</code> of the proto repository.
 		</p>
 
 		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">How it is built</h2>
 		<p class="m-0">
-			Every tagged release from v{data.versions.at(-1)} onward is downloaded, normalized into a flat
-			snapshot of attributes, metrics and signals, and committed. The site builds from those
-			committed snapshots with no network access, so a page can always be reproduced from the
-			repository alone. A scheduled job checks for new releases and opens a pull request when it
-			finds one.
+			Every tagged release is downloaded, normalized into a flat snapshot, and committed. The site
+			builds from those committed snapshots with no network access, so a page can always be
+			reproduced from the repository alone. A scheduled job checks for new releases and opens a pull
+			request when it finds one.
 		</p>
 		<p class="m-0">
 			The conventions are mid-migration between two model file formats. Both are read. This matters
@@ -35,23 +56,40 @@ const data = await catalog()
 
 		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">What "breaking" means here</h2>
 		<p class="m-0">
-			A change is marked breaking when it removes, renames, or walks back something the project had
-			already declared stable or release&#8209;candidate &mdash; the tier where the conventions
-			promise not to do that. The same change to a development-stability definition is marked
-			notable instead, because churn there is expected and flagging it as breaking would drown the
-			signal. Upstream release notes use their own categories; both are shown, and they do not
-			always agree.
+			For the conventions: removing, renaming or walking back something already marked stable or
+			release&#8209;candidate &mdash; the tier where the project promises not to do that. For the
+			specification: adding, dropping or restrengthening a requirement in a document marked Stable.
+			For OTLP: changing an existing field in a released package. The same changes to a
+			development-stability definition are marked notable instead, because churn there is expected
+			and flagging it as breaking would drown the signal.
+		</p>
+		<p class="m-0">
+			Both OTLP encodings are load-bearing, which is why nearly any change to an existing field
+			counts: binary OTLP keys on the field <em>number</em>, OTLP/JSON keys on the field
+			<em>name</em>. Renaming a field breaks every JSON client even though the binary format never
+			notices.
+		</p>
+		<p class="m-0">
+			Upstream release notes use their own categories; both are shown, and they do not always agree.
 		</p>
 
 		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">Limits</h2>
 		<ul class="m-0 pl-5 flex flex-col gap-2">
 			<li>
-				History starts at v{data.versions.at(-1)}. An attribute described as first seen there may be
-				much older.
+				History starts at semantic conventions v{data.semconv.versions.at(-1)}, specification
+				v{data.spec.versions.at(-1)} and OTLP v{data.proto.versions.at(-1)}. Anything described as
+				first seen there may be much older.
 			</li>
 			<li>
-				Only the conventions registry is covered so far &mdash; not the OpenTelemetry specification
-				prose or the OTLP protocol definitions.
+				Specification changes are tracked as requirements, not as prose diffs. A paragraph rewritten
+				without changing what it requires shows as editorial.
+			</li>
+			<li>
+				Only <code class="font-mono text-[0.92em]">specification/</code> is read from the
+				specification repository. <code class="font-mono text-[0.92em]">oteps/</code>,{" "}
+				<code class="font-mono text-[0.92em]">development/</code> and{" "}
+				<code class="font-mono text-[0.92em]">supplementary-guidelines/</code> are proposals and
+				commentary, and their MUSTs bind no one.
 			</li>
 			<li>
 				Definitions are reported as the registry states them. Where the registry is silent, so is
@@ -68,16 +106,18 @@ const data = await catalog()
 		<p class="m-0">
 			There is also a public, read-only MCP server at
 			<code class="font-mono text-[0.92em]">/mcp</code> &mdash; no auth, no session state. Its most
-			useful tool is <code class="font-mono text-[0.92em]">check_attribute_names</code>: hand it the
-			attribute keys a codebase emits and it reports which are deprecated, renamed, or not in the
-			registry at all. Worth reaching for before asserting that a key is current, since the registry
-			moves monthly and a model's training data usually does not.
+			useful tools are <code class="font-mono text-[0.92em]">check_attribute_names</code>, which takes
+			the attribute keys a codebase emits and reports which are deprecated, renamed, or not in the
+			registry at all, and <code class="font-mono text-[0.92em]">search_requirements</code>, which
+			searches every MUST and SHOULD in the specification and in OTLP. Both are worth reaching for
+			before asserting what is current, since these repositories move monthly and a model's training
+			data usually does not.
 		</p>
 
 		<p class="m-0 text-muted text-[13.5px] mt-3">
 			Independent project, built by <a href={SITE.builderUrl}>{SITE.builder}</a>. Not affiliated with
-			the OpenTelemetry project, the CNCF, or the Linux Foundation. Source data is licensed by the
-			OpenTelemetry Authors under Apache 2.0.
+			the OpenTelemetry project, the CNCF, or the Linux Foundation. Source data is © the
+			OpenTelemetry Authors, licensed Apache 2.0.
 		</p>
 	</div>
 </Shell>

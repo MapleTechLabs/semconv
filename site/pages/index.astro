@@ -2,65 +2,76 @@
 import ChangeList from "../components/ChangeList.astro"
 import Pill from "../components/Pill.astro"
 import Shell from "../layouts/Shell.astro"
-import { catalog } from "../../src/model/catalog.ts"
+import { catalog, SOURCE_LABEL, SOURCES } from "../../src/model/catalog.ts"
 import { formatDate, severityClass } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
 const data = await catalog()
 const linkable = new Set(data.attributes.map((a) => a.id))
-const latestRelease = data.releases.find((r) => r.version === data.latest.version)
 
-const deprecatedCount = data.attributes.filter((a) => a.deprecated).length
-const stableCount = data.attributes.filter((a) => a.stability === "stable" && !a.deprecated).length
+const requirements = data.spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
 
-const stats = [
-	{ value: data.attributes.length, label: "attributes tracked" },
-	{ value: stableCount, label: "of them stable" },
-	{ value: deprecatedCount, label: "deprecated" },
-	{ value: data.renames.size, label: "with a known successor" },
-]
-
-/** The feed shows the changes that carry consequence; editorial churn is a link. */
-const feed = data.diffs.map((diff) => {
-	const release = data.releases.find((r) => r.version === diff.to)
-	return {
-		diff,
-		release,
-		significant: diff.changes.filter((c) => c.severity !== "informational"),
-	}
+/**
+ * Three separately-versioned repositories, which is the whole reason keeping up
+ * is hard. Each card says where that source stands today.
+ */
+const sourceCards = [
+	{
+		id: "semconv" as const,
+		href: "/attributes",
+		blurb: `${data.attributes.length} attributes, ${data.metrics.length} metrics. ${data.renames.size} have been renamed to something else.`,
+	},
+	{
+		id: "spec" as const,
+		href: "/spec",
+		blurb: `${data.spec.latest.documents.length} documents carrying ${requirements} MUST, SHOULD and MAY requirements.`,
+	},
+	{
+		id: "proto" as const,
+		href: "/otlp",
+		blurb: `${data.proto.latest.messages.length} wire definitions plus the protocol requirements every OTLP server is bound by.`,
+	},
+].map((card) => {
+	const source = data.source(card.id)
+	return { ...card, version: source.latest.version, publishedAt: source.release(source.latest.version)?.publishedAt }
 })
+
+const feed = data.feed.map((entry) => ({
+	...entry,
+	significant: entry.diff.changes.filter((c) => c.severity !== "informational"),
+}))
 ---
 
 <Shell title={SITE.name} description={SITE.description}>
 	<section class="border-b border-rule pb-9">
-		<h1 class="m-0 text-[2.1rem] leading-[1.15] font-semibold tracking-[-0.02em] max-w-[20ch]">
+		<h1 class="m-0 text-[2.1rem] leading-[1.15] font-semibold tracking-[-0.02em] max-w-[19ch]">
 			{SITE.tagline}
 		</h1>
 		<p class="mt-4 mb-0 max-w-[62ch] text-muted">
-			The conventions ship a machine-readable registry, and every deprecation in it names its
-			replacement. This reads that registry at every release and tells you what moved &mdash; which
-			attributes were renamed, which were promoted to stable, and which of the keys your code writes
-			today are already on their way out.
+			OpenTelemetry is three separately-versioned repositories, and none of them will tell you what
+			moved since you last looked. This reads all three at every release: which attributes were
+			renamed, which requirements appeared in a stable document, and which fields changed on the
+			wire.
 		</p>
 
-		<dl class="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4 max-w-2xl">
+		<div class="mt-8 grid gap-x-8 gap-y-6 sm:grid-cols-3">
 			{
-				stats.map((stat) => (
-					<div class="m-0">
-						<dt class="text-[12px] uppercase tracking-wide text-faint">{stat.label}</dt>
-						<dd class="m-0 font-mono text-[1.6rem] leading-none font-medium">{stat.value}</dd>
+				sourceCards.map((card) => (
+					<div>
+						<h2 class="m-0 text-[13.5px] font-semibold">
+							<a href={card.href} class="no-underline hover:underline">
+								{SOURCE_LABEL[card.id]}
+							</a>
+						</h2>
+						<p class="mt-1 mb-0 font-mono text-[1.15rem] leading-none font-medium">v{card.version}</p>
+						{card.publishedAt && (
+							<p class="mt-1 mb-0 text-[12px] text-faint">{formatDate(card.publishedAt)}</p>
+						)}
+						<p class="mt-2 mb-0 text-[13px] text-muted">{card.blurb}</p>
 					</div>
 				))
 			}
-		</dl>
-
-		<p class="mt-7 mb-0 text-[13.5px] text-muted">
-			Tracking <strong class="font-mono font-medium text-ink">{data.versions.length}</strong> releases,
-			v{data.versions.at(-1)} to <a
-				href={`/releases/${data.latest.version}`}
-				class="font-mono font-medium text-ink">v{data.latest.version}</a
-			>{latestRelease && <span> &mdash; published {formatDate(latestRelease.publishedAt)}</span>}.
-		</p>
+		</div>
 	</section>
 
 	<section class="mt-10">
@@ -68,12 +79,13 @@ const feed = data.diffs.map((diff) => {
 
 		<div class="mt-5 flex flex-col gap-9">
 			{
-				feed.map(({ diff, release, significant }) => (
+				feed.map(({ source, version, diff, release, significant }) => (
 					<article>
 						<header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-							<h3 class="m-0 font-mono text-[1.05rem] font-semibold tracking-tight">
-								<a href={`/releases/${diff.to}`} class="no-underline hover:underline">
-									v{diff.to}
+							<h3 class="m-0 text-[1.05rem] font-semibold tracking-tight">
+								<a href={`/releases/${source}/${version}`} class="no-underline hover:underline">
+									<span class="text-muted font-normal text-[0.9em]">{SOURCE_LABEL[source]}</span>{" "}
+									<span class="font-mono">v{version}</span>
 								</a>
 							</h3>
 							{release && (
@@ -83,10 +95,7 @@ const feed = data.diffs.map((diff) => {
 							)}
 							<span class="flex gap-1.5 ml-auto">
 								{diff.counts.breaking > 0 && (
-									<Pill
-										label={`${diff.counts.breaking} breaking`}
-										class={severityClass("breaking")}
-									/>
+									<Pill label={`${diff.counts.breaking} breaking`} class={severityClass("breaking")} />
 								)}
 								{diff.counts.notable > 0 && (
 									<Pill label={`${diff.counts.notable} notable`} class={severityClass("notable")} />
@@ -96,18 +105,17 @@ const feed = data.diffs.map((diff) => {
 
 						{significant.length === 0 ? (
 							<p class="mt-2 mb-0 text-[13.5px] text-faint">
-								Editorial only &mdash; {diff.counts.informational} wording, example and guidance
-								changes.
+								Editorial only &mdash; {diff.counts.informational} wording, example and guidance changes.
 							</p>
 						) : (
 							<div class="mt-2">
-								<ChangeList changes={significant.slice(0, 8)} linkable={linkable} />
+								<ChangeList changes={significant.slice(0, 6)} linkable={linkable} />
 							</div>
 						)}
 
 						<p class="mt-2.5 mb-0 text-[13px] text-faint flex flex-wrap gap-x-4">
-							<a href={`/releases/${diff.to}`} class="text-muted">
-								{significant.length > 8
+							<a href={`/releases/${source}/${version}`} class="text-muted">
+								{significant.length > 6
 									? `All ${significant.length} notable changes`
 									: `Full diff from v${diff.from}`}
 								{diff.counts.informational > 0 && ` + ${diff.counts.informational} editorial`}
@@ -119,9 +127,10 @@ const feed = data.diffs.map((diff) => {
 			}
 		</div>
 
-		<p class="mt-10 mb-0 text-[13px] text-faint">
-			History starts at v{data.versions.at(-1)}. Earlier releases used a model schema different enough
-			that diffing across it would report changes the project never made.
+		<p class="mt-10 mb-0 text-[13px] text-faint max-w-[62ch]">
+			History starts at {SOURCES.map((id) => `${SOURCE_LABEL[id]} v${data.source(id).versions.at(-1)}`).join(", ")}.
+			Going further back would mean diffing across schema and layout changes that would report churn
+			the projects never made.
 		</p>
 	</section>
 </Shell>

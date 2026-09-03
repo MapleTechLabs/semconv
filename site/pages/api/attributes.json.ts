@@ -6,7 +6,7 @@ export const GET: APIRoute = async () => {
 	const data = await catalog()
 	return json({
 		source: "semconv",
-		version: data.latest.version,
+		version: data.semconv.latest.version,
 		count: data.attributes.length,
 		attributes: data.attributes.map((a) => ({
 			id: a.id,

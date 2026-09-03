@@ -1,5 +1,7 @@
 ---
-import type { Change } from "../../src/model/diff.ts"
+import type { Change } from "../../src/model/change.ts"
+import type { SourceId } from "../../src/model/types.ts"
+import { SOURCE_REPO } from "../../src/model/catalog.ts"
 import { attributeHref, inlineCode, kindLabel, severityClass } from "../lib/format.ts"
 import Pill from "./Pill.astro"
 
@@ -7,25 +9,55 @@ interface Props {
 	changes: readonly Change[]
 	/** Attribute ids that exist as pages, so only real links are rendered. */
 	linkable: ReadonlySet<string>
+	source?: SourceId
+	/** Tag to resolve `href` against upstream. Defaults to the default branch. */
+	tag?: string
 }
-const { changes, linkable } = Astro.props
+const { changes, linkable, source, tag } = Astro.props
+
+/**
+ * Spec and OTLP changes carry an upstream path (often with an anchor) rather
+ * than an id this site hosts a page for, so they link out to the definition at
+ * the tag being described - the only place the full prose exists.
+ */
+const upstream = (change: Change): string | undefined => {
+	if (!source || source === "semconv" || !change.href) return undefined
+	const [path, anchor] = change.href.split("#")
+	return `${SOURCE_REPO[source]}/blob/${tag ?? "main"}/${path}${anchor ? `#${anchor}` : ""}`
+}
+
+/** Section ids are long paths; the file and anchor alone identify them. */
+const shortId = (change: Change) => {
+	if (change.entity !== "requirement" && change.entity !== "section" && change.entity !== "document") return change.id
+	const [path, anchor] = change.id.split("#")
+	const file = (path ?? "").split("/").slice(-2).join("/")
+	return anchor ? `${file}#${anchor}` : file
+}
 ---
 
 <ul class="m-0 list-none p-0">
 	{
-		changes.map((change) => (
-			<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
-				<Pill label={kindLabel(change.kind)} class={severityClass(change.severity)} />
-				<span class="text-[11px] uppercase tracking-wide text-faint">{change.entity}</span>
-				{change.entity === "attribute" && linkable.has(change.id) ? (
-					<a href={attributeHref(change.id)} class="font-mono text-[13.5px] font-medium">
-						{change.id}
-					</a>
-				) : (
-					<span class="font-mono text-[13.5px] font-medium">{change.id}</span>
-				)}
-				<span class="text-muted text-[13.5px] basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
-			</li>
-		))
+		changes.map((change) => {
+			const href = upstream(change)
+			const label = shortId(change)
+			return (
+				<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
+					<Pill label={kindLabel(change.kind)} class={severityClass(change.severity)} />
+					<span class="text-[11px] uppercase tracking-wide text-faint">{change.entity}</span>
+					{change.entity === "attribute" && linkable.has(change.id) ? (
+						<a href={attributeHref(change.id)} class="font-mono text-[13.5px] font-medium break-all">
+							{change.id}
+						</a>
+					) : href ? (
+						<a href={href} class="font-mono text-[13.5px] font-medium break-all">
+							{label}
+						</a>
+					) : (
+						<span class="font-mono text-[13.5px] font-medium break-all">{label}</span>
+					)}
+					<span class="text-muted text-[13.5px] basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
+				</li>
+			)
+		})
 	}
 </ul>

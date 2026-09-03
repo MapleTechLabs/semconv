@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ props }) => {
 	const attribute = props["attribute"] as (typeof data.attributes)[number]
 	return json({
 		source: "semconv",
-		version: data.latest.version,
+		version: data.semconv.latest.version,
 		attribute,
 		history: data.lifecycle.get(attribute.id) ?? [],
 		replaces: [...data.renames.entries()].filter(([, to]) => to === attribute.id).map(([from]) => from),

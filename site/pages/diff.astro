@@ -1,43 +1,57 @@
 ---
 import Shell from "../layouts/Shell.astro"
-import { catalog } from "../../src/model/catalog.ts"
+import { catalog, SOURCE_LABEL, SOURCES } from "../../src/model/catalog.ts"
 
 const data = await catalog()
-const oldestFirst = [...data.versions].reverse()
-const defaults = {
-	from: oldestFirst.at(-2) ?? (oldestFirst[0] as string),
-	to: data.latest.version,
-}
+
+/** Version lists per source, oldest first, handed to the client as JSON. */
+const versions = Object.fromEntries(SOURCES.map((id) => [id, [...data.source(id).versions].reverse()]))
+const defaults = Object.fromEntries(
+	SOURCES.map((id) => {
+		const list = versions[id] as string[]
+		return [id, { from: list.at(-2) ?? (list[0] as string), to: list.at(-1) as string }]
+	}),
+)
 ---
 
 <Shell
 	title="Compare versions"
-	description="Diff any two releases of the OpenTelemetry semantic conventions: renames, deprecations, promotions and removals between them."
+	description="Diff any two releases of the OpenTelemetry semantic conventions, specification or OTLP: renames, deprecations, new requirements and wire changes between them."
 >
 	<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Compare versions</h1>
 	<p class="mt-2 mb-0 text-muted max-w-[65ch]">
-		Upgrading across several releases at once? Pick the version your instrumentation was written
-		against and the version you are moving to.
+		Upgrading across several releases at once? Pick the version you built against and the version you
+		are moving to.
 	</p>
 
-	<form class="mt-6 flex flex-wrap items-end gap-3" id="form" data-default-from={defaults.from} data-default-to={defaults.to}>
+	<form
+		class="mt-6 flex flex-wrap items-end gap-3"
+		id="form"
+		data-versions={JSON.stringify(versions)}
+		data-defaults={JSON.stringify(defaults)}
+	>
+		<label class="flex flex-col gap-1">
+			<span class="text-[11px] uppercase tracking-wide text-faint">Source</span>
+			<select
+				id="source"
+				class="rounded-md border border-rule bg-surface px-3 py-2 text-[13.5px] outline-none focus:border-rule-strong"
+			>
+				{SOURCES.map((id) => <option value={id}>{SOURCE_LABEL[id]}</option>)}
+			</select>
+		</label>
 		<label class="flex flex-col gap-1">
 			<span class="text-[11px] uppercase tracking-wide text-faint">From</span>
 			<select
 				id="from"
 				class="rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
-			>
-				{oldestFirst.map((version) => <option value={version}>v{version}</option>)}
-			</select>
+			></select>
 		</label>
 		<label class="flex flex-col gap-1">
 			<span class="text-[11px] uppercase tracking-wide text-faint">To</span>
 			<select
 				id="to"
 				class="rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
-			>
-				{oldestFirst.map((version) => <option value={version}>v{version}</option>)}
-			</select>
+			></select>
 		</label>
 		<label class="flex items-center gap-2 pb-2.5 text-[13.5px] text-muted">
 			<input type="checkbox" id="editorial" class="accent-current" />
@@ -50,28 +64,48 @@ const defaults = {
 </Shell>
 
 <script>
-	import type { Change, SemconvDiff } from "../../src/model/diff.ts"
+	import type { Change, SourceDiff } from "../../src/model/change.ts"
 	import { attributeHref, inlineCode, kindLabel, SEVERITY_LABEL, severityClass } from "../lib/format.ts"
 
 	const form = document.getElementById("form") as HTMLFormElement
+	const sourceSelect = document.getElementById("source") as HTMLSelectElement
 	const fromSelect = document.getElementById("from") as HTMLSelectElement
 	const toSelect = document.getElementById("to") as HTMLSelectElement
 	const editorial = document.getElementById("editorial") as HTMLInputElement
 	const summary = document.getElementById("summary") as HTMLElement
 	const out = document.getElementById("out") as HTMLElement
 
+	const versions = JSON.parse(form.dataset["versions"] ?? "{}") as Record<string, string[]>
+	const defaults = JSON.parse(form.dataset["defaults"] ?? "{}") as Record<string, { from: string; to: string }>
+
 	const params = new URLSearchParams(location.search)
-	fromSelect.value = params.get("from") ?? form.dataset["defaultFrom"] ?? fromSelect.value
-	toSelect.value = params.get("to") ?? form.dataset["defaultTo"] ?? toSelect.value
+	if (params.get("source") && versions[params.get("source") as string]) sourceSelect.value = params.get("source") as string
+
+	/** Repopulates the version pickers whenever the source changes. */
+	function fillVersions(preferred?: { from: string; to: string }) {
+		const list = versions[sourceSelect.value] ?? []
+		for (const select of [fromSelect, toSelect]) {
+			select.innerHTML = list.map((v) => `<option value="${v}">v${v}</option>`).join("")
+		}
+		const fallback = defaults[sourceSelect.value] ?? { from: list[0] ?? "", to: list.at(-1) ?? "" }
+		fromSelect.value = preferred?.from && list.includes(preferred.from) ? preferred.from : fallback.from
+		toSelect.value = preferred?.to && list.includes(preferred.to) ? preferred.to : fallback.to
+	}
+
+	fillVersions({ from: params.get("from") ?? "", to: params.get("to") ?? "" })
 	editorial.checked = params.get("editorial") === "1"
 
-	const cache = new Map<string, SemconvDiff>()
+	const cache = new Map<string, SourceDiff>()
 
 	function row(change: Change): string {
+		const label =
+			change.entity === "requirement" || change.entity === "section" || change.entity === "document"
+				? change.id.split("/").slice(-2).join("/")
+				: change.id
 		const id =
 			change.entity === "attribute"
-				? `<a href="${attributeHref(change.id)}" class="font-mono text-[13.5px] font-medium">${change.id}</a>`
-				: `<span class="font-mono text-[13.5px] font-medium">${change.id}</span>`
+				? `<a href="${attributeHref(change.id)}" class="font-mono text-[13.5px] font-medium break-all">${change.id}</a>`
+				: `<span class="font-mono text-[13.5px] font-medium break-all">${label}</span>`
 		return `<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
 			<span class="inline-block rounded px-1.5 py-px text-[11px] font-medium tracking-wide uppercase ${severityClass(change.severity)}">${kindLabel(change.kind)}</span>
 			<span class="text-[11px] uppercase tracking-wide text-faint">${change.entity}</span>
@@ -81,10 +115,11 @@ const defaults = {
 	}
 
 	async function render() {
+		const source = sourceSelect.value
 		const from = fromSelect.value
 		const to = toSelect.value
 
-		const next = new URLSearchParams({ from, to })
+		const next = new URLSearchParams({ source, from, to })
 		if (editorial.checked) next.set("editorial", "1")
 		history.replaceState(null, "", `?${next}`)
 
@@ -93,15 +128,16 @@ const defaults = {
 			out.innerHTML = ""
 			return
 		}
-		// The API only holds older-to-newer pairs; a reversed pick is a user
-		// mistake worth naming rather than a 404.
-		if (from > to && from.localeCompare(to, undefined, { numeric: true }) > 0) {
+		// Only older-to-newer pairs exist; a reversed pick is a mistake worth
+		// naming rather than a 404.
+		const list = versions[source] ?? []
+		if (list.indexOf(from) > list.indexOf(to)) {
 			summary.textContent = `v${from} is newer than v${to} — swap them to see what changed.`
 			out.innerHTML = ""
 			return
 		}
 
-		const key = `${from}...${to}`
+		const key = `${source}/${from}...${to}`
 		summary.textContent = "Loading…"
 
 		let diff = cache.get(key)
@@ -112,17 +148,27 @@ const defaults = {
 				out.innerHTML = ""
 				return
 			}
-			diff = (await response.json()) as SemconvDiff
+			diff = (await response.json()) as SourceDiff
 			cache.set(key, diff)
 		}
 
 		const changes = diff.changes.filter((c) => editorial.checked || c.severity !== "informational")
 		summary.innerHTML = (["breaking", "notable", "informational"] as const)
-			.map((s) => `<strong class="text-ink font-mono font-medium">${diff.counts[s]}</strong> ${SEVERITY_LABEL[s].toLowerCase()}`)
+			.map(
+				(s) =>
+					`<strong class="text-ink font-mono font-medium">${diff.counts[s]}</strong> ${SEVERITY_LABEL[s].toLowerCase()}`,
+			)
 			.join(" · ")
-		out.innerHTML = changes.length > 0 ? changes.map(row).join("") : `<li class="py-2 text-muted">Nothing but editorial changes between these releases.</li>`
+		out.innerHTML =
+			changes.length > 0
+				? changes.map(row).join("")
+				: `<li class="py-2 text-muted">Nothing but editorial changes between these releases.</li>`
 	}
 
+	sourceSelect.addEventListener("change", () => {
+		fillVersions()
+		void render()
+	})
 	for (const element of [fromSelect, toSelect, editorial]) element.addEventListener("change", render)
 	void render()
 </script>

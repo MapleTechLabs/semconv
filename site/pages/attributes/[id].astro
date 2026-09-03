@@ -2,7 +2,7 @@
 import Pill from "../../components/Pill.astro"
 import Shell from "../../layouts/Shell.astro"
 import { catalog } from "../../../src/model/catalog.ts"
-import { SITE } from "../../lib/site.ts"
+import { SOURCE_REPO } from "../../../src/model/catalog.ts"
 import {
 	attributeHref,
 	formatDate,
@@ -26,7 +26,7 @@ const { attribute } = Astro.props
 const data = await catalog()
 
 // Relative links in registry prose resolve against the release being rendered.
-setSourceTag(`v${data.latest.version}`)
+setSourceTag(`v${data.semconv.latest.version}`)
 
 const events = [...(data.lifecycle.get(attribute.id) ?? [])].reverse()
 const successor = attribute.deprecated?.renamedTo
@@ -41,7 +41,7 @@ for (const use of attribute.usedBy) {
 	usage.set(use.groupType, bucket)
 }
 
-const sourceUrl = `${SITE.repo}/blob/v${data.latest.version}/${attribute.definedIn}`
+const sourceUrl = `${SOURCE_REPO.semconv}/blob/v${data.semconv.latest.version}/${attribute.definedIn}`
 const registryDocs = `https://opentelemetry.io/docs/specs/semconv/registry/attributes/${attribute.namespace}/`
 
 const description = attribute.deprecated
@@ -67,7 +67,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 			class={stabilityClass(attribute.stability, Boolean(attribute.deprecated))}
 		/>
 		<span class="font-mono text-[12.5px] text-muted">{attribute.type}</span>
-		<span class="text-[12.5px] text-faint">as of v{data.latest.version}</span>
+		<span class="text-[12.5px] text-faint">as of v{data.semconv.latest.version}</span>
 	</div>
 
 	{
@@ -211,7 +211,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 					<li class="relative pl-5 pb-4 last:pb-0">
 						<span class="absolute left-[-4px] top-[7px] h-[7px] w-[7px] rounded-full bg-rule-strong" />
 						<div class="flex flex-wrap items-baseline gap-x-2.5">
-							<a href={`/releases/${event.version}`} class="font-mono text-[13.5px] font-medium">
+							<a href={`/releases/semconv/${event.version}`} class="font-mono text-[13.5px] font-medium">
 								v{event.version}
 							</a>
 							<time class="text-[12.5px] text-faint" datetime={event.publishedAt}>

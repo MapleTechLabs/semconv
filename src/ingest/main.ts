@@ -1,7 +1,9 @@
 import { Effect } from "effect"
 import type { ReleaseRecord, SourceId } from "../model/types.ts"
 import { fetchTag, listReleases } from "./github.ts"
+import { normalizeProto } from "./proto.ts"
 import { normalizeSemconv } from "./semconv.ts"
+import { normalizeSpec } from "./spec.ts"
 import { compareVersions, hasSnapshot, writeIndex, writeSnapshot } from "./store.ts"
 
 /**
@@ -9,26 +11,51 @@ import { compareVersions, hasSnapshot, writeIndex, writeSnapshot } from "./store
  * normalizing them would produce misleading diffs — better to have a hard,
  * documented horizon than a subtly wrong one.
  */
-const FLOOR: Record<SourceId, string> = { semconv: "1.30.0", spec: "1.40.0", proto: "1.3.0" }
+const FLOOR: Record<SourceId, string> = { semconv: "1.30.0", spec: "1.42.0", proto: "1.4.0" }
 
 const CACHE = "/tmp/otel-spec-tracker"
 
-const ingestSemconv = (release: ReleaseRecord) =>
+const ingest = (source: SourceId, release: ReleaseRecord) =>
 	Effect.gen(function* () {
-		const root = yield* fetchTag("semconv", release.tag, CACHE)
-		const snapshot = yield* Effect.promise(() =>
-			normalizeSemconv(root, { tag: release.tag, version: release.version, publishedAt: release.publishedAt }),
-		)
+		const root = yield* fetchTag(source, release.tag, CACHE)
+		const meta = { tag: release.tag, version: release.version, publishedAt: release.publishedAt }
+
+		const { snapshot, summary } = yield* Effect.promise(async () => {
+			switch (source) {
+				case "semconv": {
+					const s = await normalizeSemconv(root, meta)
+					return {
+						snapshot: s,
+						summary: `${s.attributes.length} attributes, ${s.metrics.length} metrics, ${s.signals.length} signals`,
+					}
+				}
+				case "spec": {
+					const s = await normalizeSpec(root, meta)
+					const statements = s.sections.reduce((n, section) => n + section.normative.length, 0)
+					return {
+						snapshot: s,
+						summary: `${s.documents.length} documents, ${s.sections.length} sections, ${statements} requirements`,
+					}
+				}
+				case "proto": {
+					const s = await normalizeProto(root, meta)
+					const statements = s.sections.reduce((n, section) => n + section.normative.length, 0)
+					return {
+						snapshot: s,
+						summary: `${s.messages.length} messages, ${statements} protocol requirements`,
+					}
+				}
+			}
+		})
+
 		yield* Effect.promise(() => writeSnapshot(snapshot))
-		yield* Effect.log(
-			`semconv ${release.version}: ${snapshot.attributes.length} attributes, ${snapshot.metrics.length} metrics, ${snapshot.signals.length} signals`,
-		)
+		yield* Effect.log(`${source} ${release.version}: ${summary}`)
 	})
 
 const program = Effect.gen(function* () {
 	const only = process.argv.slice(2).filter((a) => !a.startsWith("-"))
 	const force = process.argv.includes("--force")
-	const sources: SourceId[] = (only.length > 0 ? only : ["semconv"]) as SourceId[]
+	const sources: SourceId[] = (only.length > 0 ? only : ["semconv", "spec", "proto"]) as SourceId[]
 
 	const allReleases: ReleaseRecord[] = []
 
@@ -39,7 +66,7 @@ const program = Effect.gen(function* () {
 
 		for (const release of releases) {
 			if (!force && (yield* Effect.promise(() => hasSnapshot(source, release.version)))) continue
-			if (source === "semconv") yield* ingestSemconv(release)
+			yield* ingest(source, release)
 		}
 	}
 
