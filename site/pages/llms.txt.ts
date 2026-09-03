@@ -16,20 +16,24 @@ export const GET: APIRoute = async ({ site }) => {
 	const semconv = data.semconv
 	const spec = data.spec
 	const proto = data.proto
+	const genai = data.genai
 	const requirements = spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
 
 	const body = `# ${SITE.name}
 
 > ${SITE.description}
 
-Derived from three OpenTelemetry repositories, all Apache-2.0 licensed: semantic-conventions,
-opentelemetry-specification, and opentelemetry-proto. Independent project, built by ${SITE.builder}.
+Derived from four OpenTelemetry repositories, all Apache-2.0 licensed: semantic-conventions,
+opentelemetry-specification, opentelemetry-proto, and semantic-conventions-genai. Independent project, built by ${SITE.builder}.
 Not affiliated with the OpenTelemetry project or the CNCF.
 
 Currently tracking:
 - Semantic conventions v${semconv.versions.at(-1)} to v${semconv.latest.version} - ${semconv.latest.attributes.length} attributes, ${semconv.latest.metrics.length} metrics, ${data.renames.size} known renames
 - Specification v${spec.versions.at(-1)} to v${spec.latest.version} - ${spec.latest.documents.length} documents, ${requirements} RFC 2119 requirements
 - OTLP v${proto.versions.at(-1)} to v${proto.latest.version} - ${proto.latest.messages.length} wire definitions plus the protocol requirements
+- GenAI conventions at ${genai.latest.version} - ${genai.latest.attributes.length} attributes. UNRELEASED: that repository has never cut a
+  tag, so it is tracked from its default branch and dated rather than versioned, and everything in
+  it is development stability.
 
 ## Answering the three common questions
 
@@ -38,6 +42,13 @@ Fetch ${origin}/api/renames.json - every deprecated attribute with the name that
 the release that did it. Small enough to hold in context while auditing a codebase. An id absent
 from that list is either current or was deprecated without a successor;
 ${origin}/api/attributes.json distinguishes the two via each entry's \`deprecated\` field.
+
+Mind the third case: v1.44.0 moved the entire \`gen_ai.*\` namespace out to the GenAI conventions
+repository. Those attributes appear in semantic-conventions as deprecated "Moved to..." stubs while
+their live definitions sit in the other registry, so a check that reads only semantic-conventions
+reports ~59 attributes in active production use as dead. \`/api/attributes.json\` serves both
+registries, each entry tagged with \`registry\`, and \`check_attribute_names\` returns status
+\`moved\` for these - meaning current, no code change needed.
 
 **"What changed between the version we targeted and now?"**
 Fetch ${origin}/api/diff/{source}/{from}...{to}.json for any ordered pair of tracked versions of

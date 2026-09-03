@@ -2,8 +2,8 @@
 import ChangeList from "../components/ChangeList.astro"
 import Pill from "../components/Pill.astro"
 import Shell from "../layouts/Shell.astro"
-import { catalog, SOURCE_LABEL, SOURCES } from "../../src/model/catalog.ts"
-import { formatDate, severityClass } from "../lib/format.ts"
+import { catalog, SOURCE_LABEL, SOURCES, UNRELEASED } from "../../src/model/catalog.ts"
+import { formatDate, severityClass, versionLabel } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
 const data = await catalog()
@@ -12,7 +12,7 @@ const linkable = new Set(data.attributes.map((a) => a.id))
 const requirements = data.spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
 
 /**
- * Three separately-versioned repositories, which is the whole reason keeping up
+ * Four separately-versioned repositories, which is the whole reason keeping up
  * is hard. Each card says where that source stands today.
  */
 const sourceCards = [
@@ -30,6 +30,11 @@ const sourceCards = [
 		id: "proto" as const,
 		href: "/otlp",
 		blurb: `${data.proto.latest.messages.length} wire definitions plus the protocol requirements every OTLP server is bound by.`,
+	},
+	{
+		id: "genai" as const,
+		href: "/attributes?registry=genai",
+		blurb: `${data.genai.latest.attributes.length} attributes for LLM, agent and MCP instrumentation, split out of the conventions in v1.44.0.`,
 	},
 ].map((card) => {
 	const source = data.source(card.id)
@@ -63,10 +68,12 @@ const feed = data.feed.map((entry) => ({
 								{SOURCE_LABEL[card.id]}
 							</a>
 						</h2>
-						<p class="mt-1 mb-0 font-mono text-[1.15rem] leading-none font-medium">v{card.version}</p>
-						{card.publishedAt && (
-							<p class="mt-1 mb-0 text-[12px] text-faint">{formatDate(card.publishedAt)}</p>
-						)}
+						<p class="mt-1 mb-0 font-mono text-[1.15rem] leading-none font-medium">{versionLabel(card.version)}</p>
+						<p class="mt-1 mb-0 text-[12px] text-faint">
+							{UNRELEASED[card.id]
+								? "unreleased \u00b7 tracked from main"
+								: card.publishedAt && formatDate(card.publishedAt)}
+						</p>
 						<p class="mt-2 mb-0 text-[13px] text-muted">{card.blurb}</p>
 					</div>
 				))
@@ -85,7 +92,7 @@ const feed = data.feed.map((entry) => ({
 							<h3 class="m-0 text-[1.05rem] font-semibold tracking-tight">
 								<a href={`/releases/${source}/${version}`} class="no-underline hover:underline">
 									<span class="text-muted font-normal text-[0.9em]">{SOURCE_LABEL[source]}</span>{" "}
-									<span class="font-mono">v{version}</span>
+									<span class="font-mono">{versionLabel(version)}</span>
 								</a>
 							</h3>
 							{release && (
@@ -128,9 +135,11 @@ const feed = data.feed.map((entry) => ({
 		</div>
 
 		<p class="mt-10 mb-0 text-[13px] text-faint max-w-[62ch]">
-			History starts at {SOURCES.map((id) => `${SOURCE_LABEL[id]} v${data.source(id).versions.at(-1)}`).join(", ")}.
-			Going further back would mean diffing across schema and layout changes that would report churn
-			the projects never made.
+			History starts at {SOURCES.filter((id) => !UNRELEASED[id])
+				.map((id) => `${SOURCE_LABEL[id].toLowerCase()} ${versionLabel(data.source(id).versions.at(-1) as string)}`)
+				.join(", ")}. Going further back would mean diffing across schema and layout changes that would
+			report churn the projects never made. The GenAI conventions have never cut a release, so they are
+			tracked from their default branch and dated rather than versioned.
 		</p>
 	</section>
 </Shell>

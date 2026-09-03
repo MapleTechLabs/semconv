@@ -99,6 +99,25 @@ describe.skipIf(!built)("mcp worker", () => {
 		expect(result.notInRegistry).toBe(1)
 	})
 
+	/**
+	 * The case the GenAI registry exists to create: v1.44.0 deprecated the whole
+	 * `gen_ai.*` namespace in semantic-conventions with a "Moved to..." note, and
+	 * the live definitions are now in their own repository. Reading only the
+	 * first registry reports ~40 attributes in active production use as dead.
+	 */
+	test("check_attribute_names follows an attribute across registries", async () => {
+		const result = await call("check_attribute_names", {
+			names: ["gen_ai.request.model", "gen_ai.usage.input_tokens", "db.statement"],
+		})
+		const byName = Object.fromEntries(result.results.map((r: { name: string }) => [r.name, r]))
+
+		expect(byName["gen_ai.request.model"].status).toBe("moved")
+		expect(byName["gen_ai.request.model"].registry).toBe("genai")
+		expect(byName["gen_ai.usage.input_tokens"].status).toBe("moved")
+		// A move needs no code change, so it must not inflate the count that does.
+		expect(result.needsAttention).toBe(1)
+	})
+
 	test("check_attribute_names resolves template attributes by prefix", async () => {
 		const result = await call("check_attribute_names", { names: ["http.request.header.content-type"] })
 		expect(result.results[0].status).toBe("ok")

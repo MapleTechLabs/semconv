@@ -6,22 +6,44 @@ import { attributeHref, STABILITY_LABEL, stabilityClass } from "../../lib/format
 
 const data = await catalog()
 
-const rows = data.attributes.map((a) => ({
-	id: a.id,
-	brief: a.brief.replace(/\s+/g, " ").slice(0, 180),
-	namespace: a.namespace,
-	stability: a.stability,
-	deprecated: Boolean(a.deprecated),
-	renamedTo: a.deprecated?.renamedTo ?? "",
-	type: a.type,
-	// One lowercase haystack per row keeps the filter a single substring test.
-	search: `${a.id} ${a.brief} ${a.type}`.toLowerCase(),
-}))
+/**
+ * Both registries in one list. 59 ids appear in each — deprecated stubs in
+ * semantic-conventions pointing at the GenAI registry, where they are current —
+ * so the GenAI definition wins and the row is marked "moved" rather than
+ * "deprecated". Showing the stub instead would tell a reader an attribute they
+ * use every day is dead.
+ */
+const rows = [
+	...data.attributes.map((a) => ({ a, registry: "semconv" as const })),
+	...data.genai.latest.attributes.map((a) => ({ a, registry: "genai" as const })),
+]
+	.filter(({ a, registry }) => registry === "genai" || !data.genaiLive.has(a.id))
+	.map(({ a, registry }) => ({
+		id: a.id,
+		// Briefs are Markdown; these rows are plain text, so links collapse to
+		// their label rather than showing the URL mid-sentence.
+		brief: a.brief
+			.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+			.replace(/`/g, "")
+			.replace(/\s+/g, " ")
+			.trim()
+			.slice(0, 180),
+		namespace: a.namespace,
+		registry,
+		stability: a.stability,
+		deprecated: Boolean(a.deprecated),
+		renamedTo: a.deprecated?.renamedTo ?? "",
+		type: a.type,
+		// One lowercase haystack per row keeps the filter a single substring test.
+		search: `${a.id} ${a.brief} ${a.type}`.toLowerCase(),
+	}))
+	.sort((x, y) => x.id.localeCompare(y.id))
 
 const counts = {
 	all: rows.length,
 	stable: rows.filter((r) => r.stability === "stable" && !r.deprecated).length,
 	deprecated: rows.filter((r) => r.deprecated).length,
+	genai: rows.filter((r) => r.registry === "genai").length,
 }
 ---
 
@@ -34,9 +56,10 @@ const counts = {
 		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Attribute registry</h1>
 		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
 	</div>
-	<p class="mt-2 mb-0 text-muted max-w-[65ch]">
-		Every attribute the conventions define. Deprecated entries stay in the registry, so a name that
-		still resolves here may already have a successor &mdash; that is what the arrow means.
+	<p class="mt-2 mb-0 text-muted max-w-[68ch]">
+		Every attribute the conventions define, plus the GenAI registry that was split out of them in
+		v1.44.0. Deprecated entries stay in the registry, so a name that still resolves here may already
+		have a successor &mdash; that is what the arrow means.
 	</p>
 
 	<div class="mt-6 flex flex-wrap items-center gap-3">
@@ -55,6 +78,7 @@ const counts = {
 						["all", `All ${counts.all}`],
 						["stable", `Stable ${counts.stable}`],
 						["deprecated", `Deprecated ${counts.deprecated}`],
+						["genai", `GenAI ${counts.genai}`],
 					] as const
 				).map(([value, label]) => (
 					<button
@@ -79,6 +103,7 @@ const counts = {
 					class="attr-row grid grid-cols-[minmax(0,22rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2"
 					data-search={row.search}
 					data-stability={row.stability}
+					data-registry={row.registry}
 					data-deprecated={row.deprecated ? "1" : "0"}
 				>
 					<a href={attributeHref(row.id)} class="font-mono text-[13.5px] font-medium no-underline hover:underline">
@@ -89,6 +114,9 @@ const counts = {
 							label={row.deprecated ? "Deprecated" : (STABILITY_LABEL[row.stability] ?? row.stability)}
 							class={stabilityClass(row.stability, row.deprecated)}
 						/>
+						{row.registry === "genai" && (
+							<Pill label="GenAI" class="text-rc bg-rc-bg" title="Defined in the GenAI conventions registry" />
+						)}
 						{row.renamedTo && (
 							<a href={attributeHref(row.renamedTo)} class="font-mono text-[12.5px] text-muted">
 								&rarr; {row.renamedTo}
@@ -118,6 +146,7 @@ const counts = {
 	const matchesStatus = (row: HTMLElement) => {
 		if (status === "all") return true
 		if (status === "deprecated") return row.dataset["deprecated"] === "1"
+		if (status === "genai") return row.dataset["registry"] === "genai"
 		return row.dataset["stability"] === "stable" && row.dataset["deprecated"] !== "1"
 	}
 
@@ -142,8 +171,13 @@ const counts = {
 		})
 	}
 
-	// A `?q=` in the URL makes a filtered view linkable.
-	const initial = new URLSearchParams(location.search).get("q")
+	// `?q=` and `?registry=` make a filtered view linkable.
+	const params = new URLSearchParams(location.search)
+	const initial = params.get("q")
 	if (initial) input.value = initial
+	if (params.get("registry") === "genai") {
+		status = "genai"
+		for (const button of buttons) button.toggleAttribute("data-on", button.dataset["filter"] === "genai")
+	}
 	apply()
 </script>

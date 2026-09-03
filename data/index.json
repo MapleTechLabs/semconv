@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-08-07T15:52:31Z",
+	"generatedAt": "2026-09-03T01:31:41Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "fee465d",
+			"version": "2026-09-03",
+			"publishedAt": "2026-09-03T01:31:41Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commits/main",
+			"body": ""
+		},
 		{
 			"source": "spec",
 			"tag": "v1.60.0",

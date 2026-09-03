@@ -11,9 +11,9 @@ const data = await catalog()
 
 	<div class="mt-6 flex flex-col gap-5 max-w-[68ch] text-[15px]">
 		<p class="m-0">
-			OpenTelemetry is three separately-versioned repositories, and each one has to be read
-			differently. This site reads all three at every release and turns the result into pages you can
-			link to.
+			OpenTelemetry is four separately-versioned repositories, and each one has to be read
+			differently. This site reads all of them at every release and turns the result into pages you
+			can link to.
 		</p>
 
 		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">Three sources, three methods</h2>
@@ -37,6 +37,19 @@ const data = await catalog()
 			<code class="font-mono text-[0.92em]">specification/protocol/otlp.md</code> is a stub that
 			redirects to the website, and the real document lives in{" "}
 			<code class="font-mono text-[0.92em]">docs/specification.md</code> of the proto repository.
+		</p>
+
+		<p class="m-0">
+			<strong>The GenAI conventions</strong> are the same registry model in a separate repository,
+			split out of the conventions in v1.44.0. That repository has never cut a release &mdash; no
+			tags, a changelog reading only "Unreleased" &mdash; so it is tracked from its default branch,
+			dated rather than versioned, and marked unreleased everywhere it appears.
+		</p>
+		<p class="m-0">
+			The split leaves roughly 59 attributes in both registries at once: deprecated
+			&ldquo;Moved to&hellip;&rdquo; stubs in the semantic conventions, live definitions in GenAI.
+			Reading only the first registry would report attributes in daily production use as dead, so
+			both are read and those are shown as <em>moved</em> rather than deprecated.
 		</p>
 
 		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">How it is built</h2>
@@ -78,7 +91,8 @@ const data = await catalog()
 			<li>
 				History starts at semantic conventions v{data.semconv.versions.at(-1)}, specification
 				v{data.spec.versions.at(-1)} and OTLP v{data.proto.versions.at(-1)}. Anything described as
-				first seen there may be much older.
+				first seen there may be much older. The GenAI registry has no history at all yet &mdash;
+				tracking began {data.genai.versions.at(-1)}.
 			</li>
 			<li>
 				Specification changes are tracked as requirements, not as prose diffs. A paragraph rewritten

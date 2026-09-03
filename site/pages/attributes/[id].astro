@@ -16,21 +16,34 @@ import {
 
 export async function getStaticPaths() {
 	const data = await catalog()
-	return data.attributes.map((attribute) => ({
-		params: { id: attribute.id },
-		props: { attribute },
-	}))
+	const inSemconv = new Set(data.attributes.map((a) => a.id))
+	return [
+		...data.attributes.map((attribute) => ({ params: { id: attribute.id }, props: { attribute, registry: "semconv" } })),
+		// The 23 attributes the GenAI registry added after the split, which have
+		// no semantic-conventions entry at all. Ids present in both are rendered
+		// once, from the semconv side, with a "moved" callout.
+		...data.genai.latest.attributes
+			.filter((a) => !inSemconv.has(a.id))
+			.map((attribute) => ({ params: { id: attribute.id }, props: { attribute, registry: "genai" } })),
+	]
 }
 
-const { attribute } = Astro.props
+const { attribute, registry } = Astro.props as { attribute: (typeof data.attributes)[number]; registry: "semconv" | "genai" }
 const data = await catalog()
 
 // Relative links in registry prose resolve against the release being rendered.
-setSourceTag(`v${data.semconv.latest.version}`)
+setSourceTag(registry === "genai" ? "main" : `v${data.semconv.latest.version}`)
 
 const events = [...(data.lifecycle.get(attribute.id) ?? [])].reverse()
 const successor = attribute.deprecated?.renamedTo
 const predecessors = [...data.renames.entries()].filter(([, to]) => to === attribute.id).map(([from]) => from)
+
+/**
+ * A deprecated semantic-conventions entry whose definition is live in the GenAI
+ * registry is not dying — it relocated in v1.44.0. Saying "deprecated" and
+ * stopping there would send someone chasing a replacement that does not exist.
+ */
+const movedTo = registry === "semconv" ? data.genaiLive.get(attribute.id) : undefined
 
 /** Signal usage, grouped so "which spans carry this" is one glance. */
 const usage = new Map<string, { name: string; level: string }[]>()
@@ -41,7 +54,10 @@ for (const use of attribute.usedBy) {
 	usage.set(use.groupType, bucket)
 }
 
-const sourceUrl = `${SOURCE_REPO.semconv}/blob/v${data.semconv.latest.version}/${attribute.definedIn}`
+const sourceUrl =
+	registry === "genai"
+		? `${SOURCE_REPO.genai}/blob/main/${attribute.definedIn}`
+		: `${SOURCE_REPO.semconv}/blob/v${data.semconv.latest.version}/${attribute.definedIn}`
 const registryDocs = `https://opentelemetry.io/docs/specs/semconv/registry/attributes/${attribute.namespace}/`
 
 const description = attribute.deprecated
@@ -63,15 +79,43 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 
 	<div class="mt-3 flex flex-wrap items-center gap-2">
 		<Pill
-			label={attribute.deprecated ? "Deprecated" : (STABILITY_LABEL[attribute.stability] ?? attribute.stability)}
-			class={stabilityClass(attribute.stability, Boolean(attribute.deprecated))}
+			label={
+				movedTo
+					? "Moved"
+					: attribute.deprecated
+						? "Deprecated"
+						: (STABILITY_LABEL[attribute.stability] ?? attribute.stability)
+			}
+			class={movedTo ? "text-rc bg-rc-bg" : stabilityClass(attribute.stability, Boolean(attribute.deprecated))}
 		/>
+		{(registry === "genai" || movedTo) && (
+			<Pill label="GenAI registry" class="text-muted bg-rule/50" title="Unreleased; tracked from main" />
+		)}
 		<span class="font-mono text-[12.5px] text-muted">{attribute.type}</span>
 		<span class="text-[12.5px] text-faint">as of v{data.semconv.latest.version}</span>
 	</div>
 
 	{
-		attribute.deprecated && (
+		movedTo && (
+			<aside class="mt-5 rounded-md border border-rc/30 bg-rc-bg px-4 py-3">
+				<p class="m-0 text-[13.5px] font-medium text-rc">Moved, not retired</p>
+				<p class="mt-1 mb-0 text-[14.5px]">
+					Still current &mdash; the definition now lives in the{" "}
+					<a href={SOURCE_REPO.genai}>GenAI conventions</a> registry, which was split out of the
+					semantic conventions in v1.44.0. The entry left behind here is a signpost, not a
+					deprecation you need to act on.
+				</p>
+				<p class="mt-2 mb-0 text-[13px] text-muted">
+					Keep emitting <code class="font-mono text-[0.92em]">{attribute.id}</code>. That registry has
+					never cut a release, so it is tracked from its default branch and everything in it is
+					development stability.
+				</p>
+			</aside>
+		)
+	}
+
+	{
+		attribute.deprecated && !movedTo && (
 			<aside class="mt-5 rounded-md border border-breaking/30 bg-breaking-bg px-4 py-3">
 				<p class="m-0 text-[13.5px] font-medium text-breaking">
 					{successor ? "Renamed" : attribute.deprecated.reason === "obsoleted" ? "Removed" : "Deprecated"}

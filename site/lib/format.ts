@@ -111,5 +111,11 @@ export function formatDate(iso: string): string {
 	return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
 }
 
+/**
+ * A tagged release reads `v1.44.0`; an untagged source is dated, and prefixing
+ * a date with `v` would claim a release that does not exist.
+ */
+export const versionLabel = (version: string) => (version.includes("-") ? version : `v${version}`)
+
 /** `db.query.text` -> `/attributes/db.query.text`, safe for a static route. */
 export const attributeHref = (id: string) => `/attributes/${encodeURIComponent(id)}`

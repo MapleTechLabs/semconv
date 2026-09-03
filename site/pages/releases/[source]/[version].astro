@@ -5,7 +5,7 @@ import Shell from "../../../layouts/Shell.astro"
 import { catalog, SOURCES, SOURCE_LABEL } from "../../../../src/model/catalog.ts"
 import type { Severity } from "../../../../src/model/change.ts"
 import type { SourceId } from "../../../../src/model/types.ts"
-import { formatDate, SEVERITY_LABEL, severityClass } from "../../../lib/format.ts"
+import { formatDate, SEVERITY_LABEL, severityClass, versionLabel } from "../../../lib/format.ts"
 
 export async function getStaticPaths() {
 	const data = await catalog()
@@ -66,7 +66,7 @@ const upstreamBullets = (release?.body ?? "")
 	<div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
 		<h1 class="m-0 text-[1.7rem] font-semibold tracking-tight">
 			<span class="text-muted font-normal text-[0.8em]">{SOURCE_LABEL[source]}</span>
-			<span class="font-mono">v{diff.to}</span>
+			<span class="font-mono">{versionLabel(diff.to)}</span>
 		</h1>
 		{
 			release && (
@@ -75,7 +75,7 @@ const upstreamBullets = (release?.body ?? "")
 				</time>
 			)
 		}
-		<span class="text-[13.5px] text-muted">since v{diff.from}</span>
+		<span class="text-[13.5px] text-muted">since {versionLabel(diff.from)}</span>
 	</div>
 
 	<div class="mt-4 flex flex-wrap gap-1.5">
@@ -127,7 +127,7 @@ const upstreamBullets = (release?.body ?? "")
 	}
 
 	<nav class="mt-12 flex justify-between gap-4 border-t border-rule pt-4 text-[13.5px]">
-		<span>{older && <a href={`/releases/${source}/${older.to}`}>&larr; v{older.to}</a>}</span>
-		<span>{newer && <a href={`/releases/${source}/${newer.to}`}>v{newer.to} &rarr;</a>}</span>
+		<span>{older && <a href={`/releases/${source}/${older.to}`}>&larr; {versionLabel(older.to)}</a>}</span>
+		<span>{newer && <a href={`/releases/${source}/${newer.to}`}>{versionLabel(newer.to)} &rarr;</a>}</span>
 	</nav>
 </Shell>

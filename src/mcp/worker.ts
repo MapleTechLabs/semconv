@@ -36,7 +36,7 @@ const TOOLS = [
 	{
 		name: "check_attribute_names",
 		description:
-			"Given attribute keys a codebase emits or queries, report which are deprecated, renamed, or absent from the OpenTelemetry semantic conventions. Use this to audit instrumentation rather than guessing from memory - the registry moves every month.",
+			"Given attribute keys a codebase emits or queries, report which are deprecated, renamed, moved to another registry, or absent. Covers both the OpenTelemetry semantic conventions and the separate GenAI conventions registry. Use this to audit instrumentation rather than guessing from memory - the registries move every month.",
 		inputSchema: {
 			type: "object",
 			properties: {
@@ -156,15 +156,33 @@ async function callTool(name: string, args: Json, env: Env, origin: string) {
 
 			const registry = await asset(env, "/api/attributes.json", origin)
 			if (!registry) return text({ error: "registry unavailable" })
-			const byId = new Map<string, Json>(registry.attributes.map((a: Json) => [a.id, a]))
+
+			/**
+			 * A key can exist in both registries at once: v1.44.0 moved `gen_ai.*`
+			 * out to its own repository, leaving a deprecated "Moved to..." entry
+			 * behind in semantic-conventions while the live definition lives in the
+			 * GenAI conventions. Preferring a non-deprecated definition is what stops
+			 * this reporting a current attribute as dead.
+			 */
+			const byId = new Map<string, Json[]>()
+			for (const a of registry.attributes as Json[]) {
+				const bucket = byId.get(a.id)
+				if (bucket) bucket.push(a)
+				else byId.set(a.id, [a])
+			}
+			const pick = (name: string): Json | undefined => {
+				const all = byId.get(name)
+				if (!all) return undefined
+				return all.find((a) => !a.deprecated) ?? all[0]
+			}
 
 			const results = names.map((name) => {
-				const attribute = byId.get(name)
+				const attribute = pick(name)
 				if (!attribute) {
 					// Template attributes are defined as a prefix (`http.request.header`)
 					// and used with a key appended, so an exact miss is not proof of absence.
-					const prefix = registry.attributes.find(
-						(a: Json) => a.type.startsWith("template[") && name.startsWith(`${a.id}.`),
+					const prefix = (registry.attributes as Json[]).find(
+						(a) => a.type.startsWith("template[") && name.startsWith(`${a.id}.`),
 					)
 					return prefix
 						? { name, status: "ok", note: `Matches the template attribute \`${prefix.id}\`.` }
@@ -182,16 +200,32 @@ async function callTool(name: string, args: Json, env: Env, origin: string) {
 					return {
 						name,
 						status: "deprecated",
+						registry: attribute.registry,
 						note: attribute.deprecated.note ?? `Deprecated (${attribute.deprecated.reason}); no replacement defined.`,
 					}
 				}
-				return { name, status: "ok", stability: attribute.stability, type: attribute.type }
+				// Reached only when the sole live definition sits in a registry other
+				// than the one that used to own it.
+				const wasDeprecatedElsewhere = (byId.get(name) ?? []).some((a) => a.deprecated)
+				if (wasDeprecatedElsewhere) {
+					return {
+						name,
+						status: "moved",
+						registry: attribute.registry,
+						stability: attribute.stability,
+						type: attribute.type,
+						note: `Still current, but it now lives in the ${attribute.registry === "genai" ? "GenAI" : "semantic"} conventions registry. The old registry keeps a deprecated entry pointing here; no rename is needed.`,
+					}
+				}
+				return { name, status: "ok", registry: attribute.registry, stability: attribute.stability, type: attribute.type }
 			})
 
 			// "unknown" is deliberately not counted as needing attention: a
 			// vendor-namespaced key is supposed to be absent from the registry, and
 			// lumping it in with real deprecations would train the caller to ignore
 			// the count.
+			// "moved" is not attention-worthy: the key is current where it now lives,
+			// and the emitting code needs no change.
 			const needsAttention = results.filter((r) => r.status === "renamed" || r.status === "deprecated").length
 			return text({
 				version: registry.version,

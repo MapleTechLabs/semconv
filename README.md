@@ -21,6 +21,7 @@ questions that actually come up building a backend are different:
 | `semantic-conventions` | Its machine-readable registry — every attribute carries a stability level and, when deprecated, the name of its successor. |
 | `opentelemetry-specification` | Its RFC 2119 requirements. Each MUST/SHOULD/MAY is extracted and hashed, so a new requirement is distinguishable from a reflowed paragraph. Requirements that move between sections are matched across. |
 | `opentelemetry-proto` | The `.proto` files themselves — messages, field numbers, types, cardinality, enum values, retired numbers — plus the protocol prose. |
+| `semantic-conventions-genai` | The same `definition/2` registry model, in its own repository. **Untagged** — see below. |
 
 **The OTLP protocol specification is not in the specification repository.**
 `specification/protocol/otlp.md` is a stub redirecting to the website; the real 800-line document
@@ -53,6 +54,22 @@ bun run build
 `bun run ingest --force` re-normalizes every tracked release. It should produce a byte-identical
 `data/` — snapshots are fully sorted and gzipped at a fixed level precisely so that "the file
 changed" is a reliable signal that upstream moved.
+
+## The GenAI registry is untagged
+
+v1.44.0 split the `gen_ai.*` namespace into its own repository, which has never cut a release: no
+tags, a towncrier CHANGELOG reading only "Unreleased", and `stability: development` on the registry
+itself. Waiting for a tag would mean tracking nothing while the attributes are already in
+production use.
+
+So it is tracked from `main`, versioned by commit date (`2026-09-03`) with the short SHA kept as the
+tag, and labelled unreleased everywhere it appears. Snapshots are written only when the *normalized
+model* changes, not when the branch moves — otherwise `data/` would grow by the calendar.
+
+The consequence worth knowing: ~59 attributes exist in **both** registries — deprecated
+"Moved to..." stubs in semantic-conventions, live definitions in GenAI. Anything answering "is this
+key still current" has to consult both, or it reports live attributes as dead. `check_attribute_names`
+returns status `moved` for these.
 
 ## Two model formats
 

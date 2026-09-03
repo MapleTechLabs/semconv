@@ -24,18 +24,27 @@ import type {
  * once per `astro build` and shared by every page.
  */
 
-export const SOURCES: readonly SourceId[] = ["semconv", "spec", "proto"]
+export const SOURCES: readonly SourceId[] = ["semconv", "spec", "proto", "genai"]
 
 export const SOURCE_LABEL: Record<SourceId, string> = {
 	semconv: "Semantic conventions",
 	spec: "Specification",
 	proto: "OTLP",
+	genai: "GenAI conventions",
 }
+
+/**
+ * Sources tracked from a branch rather than from tags, dated instead of
+ * versioned. Everything that renders a version needs to say so, or a reader
+ * will take an unreleased change for a shipped one.
+ */
+export const UNRELEASED: Partial<Record<SourceId, true>> = { genai: true }
 
 export const SOURCE_REPO: Record<SourceId, string> = {
 	semconv: "https://github.com/open-telemetry/semantic-conventions",
 	spec: "https://github.com/open-telemetry/opentelemetry-specification",
 	proto: "https://github.com/open-telemetry/opentelemetry-proto",
+	genai: "https://github.com/open-telemetry/semantic-conventions-genai",
 }
 
 export interface LifecycleEvent {
@@ -72,6 +81,7 @@ export interface Catalog {
 	readonly semconv: SourceCatalog<SemconvSnapshot>
 	readonly spec: SourceCatalog<SpecSnapshot>
 	readonly proto: SourceCatalog<ProtoSnapshot>
+	readonly genai: SourceCatalog<SemconvSnapshot>
 	source(id: SourceId): SourceCatalog
 	/** Every release across every source, newest first. */
 	readonly feed: readonly FeedEntry[]
@@ -84,6 +94,12 @@ export interface Catalog {
 	readonly lifecycle: ReadonlyMap<string, readonly LifecycleEvent[]>
 	/** Deprecated attribute -> its successor. */
 	readonly renames: ReadonlyMap<string, string>
+	/**
+	 * Attributes the GenAI registry defines, live, keyed by id. 59 of them also
+	 * exist in semantic-conventions as deprecated "Moved to..." stubs, so this is
+	 * what tells a page that a dead-looking attribute is alive elsewhere.
+	 */
+	readonly genaiLive: ReadonlyMap<string, Attribute>
 	readonly namespaces: readonly { readonly name: string; readonly count: number }[]
 }
 
@@ -96,6 +112,8 @@ export function catalog(): Promise<Catalog> {
 
 const DIFFERS = {
 	semconv: diffSemconv,
+	// Same registry model, so the same differ; only the provenance differs.
+	genai: diffSemconv,
 	spec: diffSpec,
 	proto: diffProto,
 	// biome-ignore lint: each differ is typed to its own snapshot; the map is not.
@@ -143,8 +161,9 @@ async function build(): Promise<Catalog> {
 	const semconv = await buildSource<SemconvSnapshot>("semconv", index.releases)
 	const spec = await buildSource<SpecSnapshot>("spec", index.releases)
 	const proto = await buildSource<ProtoSnapshot>("proto", index.releases)
+	const genai = await buildSource<SemconvSnapshot>("genai", index.releases)
 
-	const sources: Record<SourceId, SourceCatalog> = { semconv, spec, proto }
+	const sources: Record<SourceId, SourceCatalog> = { semconv, spec, proto, genai }
 
 	const feed: FeedEntry[] = SOURCES.flatMap((id) =>
 		sources[id].diffs.map((diff) => {
@@ -196,6 +215,11 @@ async function build(): Promise<Catalog> {
 		}
 	}
 
+	const genaiLive = new Map<string, Attribute>()
+	for (const attribute of genai.latest.attributes) {
+		if (!attribute.deprecated) genaiLive.set(attribute.id, attribute)
+	}
+
 	const renames = new Map<string, string>()
 	for (const attribute of semconv.latest.attributes) {
 		if (attribute.deprecated?.renamedTo) renames.set(attribute.id, attribute.deprecated.renamedTo)
@@ -210,6 +234,7 @@ async function build(): Promise<Catalog> {
 		semconv,
 		spec,
 		proto,
+		genai,
 		source: (id) => sources[id],
 		feed,
 		attributes: semconv.latest.attributes,
@@ -217,6 +242,7 @@ async function build(): Promise<Catalog> {
 		signals: semconv.latest.signals,
 		lifecycle,
 		renames,
+		genaiLive,
 		namespaces: [...namespaceCounts.entries()]
 			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => a.name.localeCompare(b.name)),

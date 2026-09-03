@@ -9,7 +9,7 @@
  *      it belongs in the snapshot even if no page renders it yet.
  */
 
-export type SourceId = "semconv" | "spec" | "proto"
+export type SourceId = "semconv" | "spec" | "proto" | "genai"
 
 /**
  * The spec's own stability ladder, verbatim. `alpha` and `experimental` are
@@ -87,7 +87,11 @@ export interface SignalDef {
 }
 
 export interface SemconvSnapshot {
-	readonly source: "semconv"
+	/**
+	 * `genai` shares this shape because it is the same `definition/2` registry
+	 * model, just in its own repository — the normalizer needed no changes.
+	 */
+	readonly source: "semconv" | "genai"
 	readonly version: string
 	readonly tag: string
 	readonly publishedAt: string

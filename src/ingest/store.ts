@@ -65,9 +65,14 @@ export async function listSnapshots(source: SourceId): Promise<string[]> {
 	}
 }
 
+/**
+ * Orders both `1.44.0` and the `2026-09-03` dates used for untagged sources, by
+ * splitting on either separator. The two never mix within one source, so there
+ * is no ambiguity to resolve.
+ */
 export function compareVersions(a: string, b: string): number {
-	const pa = a.split(".").map(Number)
-	const pb = b.split(".").map(Number)
+	const pa = a.split(/[.-]/).map(Number)
+	const pb = b.split(/[.-]/).map(Number)
 	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
 		const d = (pa[i] ?? 0) - (pb[i] ?? 0)
 		if (d !== 0) return d
