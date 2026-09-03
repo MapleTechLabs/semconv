@@ -3,6 +3,7 @@ import ChangeList from "../components/ChangeList.astro"
 import Pill from "../components/Pill.astro"
 import Shell from "../layouts/Shell.astro"
 import { catalog, SOURCE_LABEL, SOURCES, UNRELEASED } from "../../src/model/catalog.ts"
+import { buildDomains } from "../../src/model/domains.ts"
 import { formatDate, severityClass, versionLabel } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
@@ -40,6 +41,13 @@ const sourceCards = [
 	const source = data.source(card.id)
 	return { ...card, version: source.latest.version, publishedAt: source.release(source.latest.version)?.publishedAt }
 })
+
+const domains = buildDomains(data).map((domain) => ({
+	slug: domain.slug,
+	title: domain.title,
+	attributes: domain.attributes.length,
+	signals: domain.metrics.length + domain.spans.length + domain.events.length + domain.entities.length,
+}))
 
 const feed = data.feed.map((entry) => ({
 	...entry,
@@ -82,6 +90,32 @@ const feed = data.feed.map((entry) => ({
 	</section>
 
 	<section class="mt-10">
+		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+			<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Browse by domain</h2>
+			<a href="/domains" class="text-[13px] text-muted no-underline hover:text-ink">All {domains.length} domains</a>
+		</div>
+		<p class="mt-2 mb-0 text-[13.5px] text-muted max-w-[62ch]">
+			The conventions ship as one flat registry. These pull a single topic together &mdash; its
+			attributes, its metrics, the spans that carry them, and the specification rules that bind them.
+			Or <a href="/search">search all four repositories</a> at once.
+		</p>
+		<ul class="mt-4 m-0 grid gap-x-6 gap-y-1.5 list-none p-0 sm:grid-cols-2 lg:grid-cols-3">
+			{
+				domains.map((domain) => (
+					<li class="flex items-baseline gap-x-2 border-b border-rule py-1.5 text-[13.5px]">
+						<a href={`/domains/${domain.slug}`} class="no-underline hover:underline">
+							{domain.title}
+						</a>
+						<span class="ml-auto font-mono text-[12px] text-faint" title={`${domain.attributes} attributes, ${domain.signals} metrics and signals`}>
+							{domain.attributes}
+						</span>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<section class="mt-12">
 		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Release history</h2>
 
 		<div class="mt-5 flex flex-col gap-9">

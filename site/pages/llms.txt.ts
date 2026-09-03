@@ -56,6 +56,12 @@ any source, e.g. ${origin}/api/diff/semconv/${semconv.versions.at(-1)}...${semco
 Each change carries \`kind\`, \`severity\`, \`entity\`, \`id\`, \`detail\`, and \`renamedTo\` where a
 successor is known.
 
+**"What is involved in instrumenting X?"**
+Fetch ${origin}/api/domains.json - the registry grouped by topic. Attributes, metrics and signals
+carry the same namespace prefixes, so a domain gathers all three; \`governedBy\` names the parts of
+the specification that bind each signal kind. The specification prose never says "database", which
+is why a keyword search of it comes back empty: what binds a db span is the trace specification.
+
 **"What does the spec actually require here?"**
 Fetch ${origin}/api/requirements.json - every MUST, SHOULD and MAY in the current specification and
 in the OTLP protocol document, each with its section and that document's stability status. Note
@@ -73,6 +79,10 @@ renamed, or absent from the registry - use it instead of answering from training
 
 ## Endpoints
 
+- ${origin}/api/domains.json - the conventions grouped by topic: every namespace, metric and signal a
+  domain owns, plus the specification areas that bind them. Upstream publishes no such grouping
+- ${origin}/api/search.json - one index over everything: attributes, metrics, signals, requirements
+  and OTLP messages, each with a type and a URL
 - ${origin}/api/versions.json - every tracked release of all three sources, with change counts
 - ${origin}/api/attributes.json - every semantic-conventions attribute at v${semconv.latest.version}
 - ${origin}/api/attributes/{id}.json - one attribute in full, plus its release-by-release history
@@ -85,7 +95,11 @@ renamed, or absent from the registry - use it instead of answering from training
 ## Pages
 
 - ${origin}/ - release history across all three sources, newest first
-- ${origin}/attributes - the semantic-conventions registry, filterable
+- ${origin}/domains - the conventions by topic: databases, HTTP, messaging, Kubernetes, GenAI, ...
+- ${origin}/domains/{slug} - one topic in full: its attributes, metrics, spans, events and the
+  specification requirements that govern them
+- ${origin}/search - search attributes, metrics, signals, requirements and OTLP messages at once
+- ${origin}/attributes - the semantic-conventions registry, grouped by namespace and filterable
 - ${origin}/attributes/{id} - one attribute, its definition, its usage, and its history
 - ${origin}/spec - specification documents and their requirements
 - ${origin}/otlp - the OTLP wire definitions

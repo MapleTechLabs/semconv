@@ -110,7 +110,7 @@ const defaults = Object.fromEntries(
 			<span class="inline-block rounded px-1.5 py-px text-[11px] font-medium tracking-wide uppercase ${severityClass(change.severity)}">${kindLabel(change.kind)}</span>
 			<span class="text-[11px] uppercase tracking-wide text-faint">${change.entity}</span>
 			${id}
-			<span class="text-muted text-[13.5px] basis-full sm:basis-auto">${inlineCode(change.detail)}</span>
+			<span class="text-muted text-[13.5px] basis-full sm:basis-auto min-w-0 [overflow-wrap:anywhere]">${inlineCode(change.detail)}</span>
 		</li>`
 	}
 

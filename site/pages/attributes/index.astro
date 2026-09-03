@@ -2,42 +2,43 @@
 import Pill from "../../components/Pill.astro"
 import Shell from "../../layouts/Shell.astro"
 import { catalog } from "../../../src/model/catalog.ts"
+import { DOMAINS, domainForNamespace, registryAttributes } from "../../../src/model/domains.ts"
 import { attributeHref, STABILITY_LABEL, stabilityClass } from "../../lib/format.ts"
 
 const data = await catalog()
 
-/**
- * Both registries in one list. 59 ids appear in each — deprecated stubs in
- * semantic-conventions pointing at the GenAI registry, where they are current —
- * so the GenAI definition wins and the row is marked "moved" rather than
- * "deprecated". Showing the stub instead would tell a reader an attribute they
- * use every day is dead.
- */
-const rows = [
-	...data.attributes.map((a) => ({ a, registry: "semconv" as const })),
-	...data.genai.latest.attributes.map((a) => ({ a, registry: "genai" as const })),
-]
-	.filter(({ a, registry }) => registry === "genai" || !data.genaiLive.has(a.id))
-	.map(({ a, registry }) => ({
-		id: a.id,
+const rows = registryAttributes(data)
+	.map(({ attribute, registry }) => ({
+		id: attribute.id,
 		// Briefs are Markdown; these rows are plain text, so links collapse to
 		// their label rather than showing the URL mid-sentence.
-		brief: a.brief
+		brief: attribute.brief
 			.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
 			.replace(/`/g, "")
 			.replace(/\s+/g, " ")
 			.trim()
 			.slice(0, 180),
-		namespace: a.namespace,
+		namespace: attribute.namespace,
 		registry,
-		stability: a.stability,
-		deprecated: Boolean(a.deprecated),
-		renamedTo: a.deprecated?.renamedTo ?? "",
-		type: a.type,
+		stability: attribute.stability,
+		deprecated: Boolean(attribute.deprecated),
+		renamedTo: attribute.deprecated?.renamedTo ?? "",
+		type: attribute.type,
 		// One lowercase haystack per row keeps the filter a single substring test.
-		search: `${a.id} ${a.brief} ${a.type}`.toLowerCase(),
+		search: `${attribute.id} ${attribute.brief} ${attribute.type}`.toLowerCase(),
 	}))
 	.sort((x, y) => x.id.localeCompare(y.id))
+
+/**
+ * Grouped by namespace rather than run as one 963-row scroll. The namespace is
+ * the unit the registry is actually written in — `db.*` is designed together —
+ * and it is what makes a domain out of a list.
+ */
+const groups = [...new Set(rows.map((row) => row.namespace))].sort().map((namespace) => ({
+	namespace,
+	domain: domainForNamespace(namespace),
+	rows: rows.filter((row) => row.namespace === namespace),
+}))
 
 const counts = {
 	all: rows.length,
@@ -49,7 +50,7 @@ const counts = {
 
 <Shell
 	title="Attribute registry"
-	description={`All ${counts.all} attributes in the OpenTelemetry semantic conventions, with stability, type and deprecation status.`}
+	description={`All ${counts.all} attributes in the OpenTelemetry semantic conventions, grouped by namespace, with stability, type and deprecation status.`}
 	wide
 >
 	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -58,8 +59,9 @@ const counts = {
 	</div>
 	<p class="mt-2 mb-0 text-muted max-w-[68ch]">
 		Every attribute the conventions define, plus the GenAI registry that was split out of them in
-		v1.44.0. Deprecated entries stay in the registry, so a name that still resolves here may already
-		have a successor &mdash; that is what the arrow means.
+		v1.44.0, grouped by namespace. Deprecated entries stay in the registry, so a name that still
+		resolves here may already have a successor &mdash; that is what the arrow means. For one topic in
+		full, with its metrics, spans and the requirements that bind them, see <a href="/domains">domains</a>.
 	</p>
 
 	<div class="mt-6 flex flex-wrap items-center gap-3">
@@ -71,6 +73,14 @@ const counts = {
 			spellcheck="false"
 			class="flex-1 min-w-[16rem] rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
 		/>
+		<select
+			id="domain"
+			aria-label="Filter by domain"
+			class="rounded-md border border-rule bg-surface px-2.5 py-2 text-[13px] text-muted outline-none focus:border-rule-strong"
+		>
+			<option value="all">All domains</option>
+			{DOMAINS.map((domain) => <option value={domain.slug}>{domain.title}</option>)}
+		</select>
 		<div class="flex gap-1.5" role="group" aria-label="Filter by status">
 			{
 				(
@@ -96,38 +106,73 @@ const counts = {
 
 	<p id="count" class="mt-3 mb-0 text-[13px] text-faint" aria-live="polite"></p>
 
-	<ul class="mt-2 m-0 list-none p-0" id="list">
+	<nav
+		id="index"
+		class="mt-3 flex flex-wrap gap-x-2.5 gap-y-0.5 border-y border-rule py-2 font-mono text-[12px] text-muted"
+		aria-label="Jump to namespace"
+	>
 		{
-			rows.map((row) => (
-				<li
-					class="attr-row grid grid-cols-[minmax(0,22rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2"
-					data-search={row.search}
-					data-stability={row.stability}
-					data-registry={row.registry}
-					data-deprecated={row.deprecated ? "1" : "0"}
-				>
-					<a href={attributeHref(row.id)} class="font-mono text-[13.5px] font-medium no-underline hover:underline">
-						{row.id}
-					</a>
-					<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-						<Pill
-							label={row.deprecated ? "Deprecated" : (STABILITY_LABEL[row.stability] ?? row.stability)}
-							class={stabilityClass(row.stability, row.deprecated)}
-						/>
-						{row.registry === "genai" && (
-							<Pill label="GenAI" class="text-rc bg-rc-bg" title="Defined in the GenAI conventions registry" />
-						)}
-						{row.renamedTo && (
-							<a href={attributeHref(row.renamedTo)} class="font-mono text-[12.5px] text-muted">
-								&rarr; {row.renamedTo}
-							</a>
-						)}
-						<span class="text-[13px] text-muted truncate">{row.brief}</span>
-					</div>
-				</li>
+			groups.map((group) => (
+				<a href={`#ns-${group.namespace}`} class="no-underline hover:text-ink" data-index={group.namespace}>
+					{group.namespace}
+				</a>
 			))
 		}
-	</ul>
+	</nav>
+
+	<div class="mt-6 flex flex-col gap-8" id="list">
+		{
+			groups.map((group) => (
+				<section class="ns-group" data-namespace={group.namespace} data-domain={group.domain?.slug ?? ""}>
+					<h2
+						id={`ns-${group.namespace}`}
+						class="m-0 flex flex-wrap items-baseline gap-x-2.5 border-b border-rule-strong pb-1 font-mono text-[14px] font-semibold"
+					>
+						{group.namespace}
+						<span class="ns-count font-sans text-[12px] font-normal text-faint">{group.rows.length} attributes</span>
+						{group.domain && (
+							<a
+								href={`/domains/${group.domain.slug}`}
+								class="ml-auto font-sans text-[12.5px] font-normal text-muted no-underline hover:text-ink"
+							>
+								{group.domain.title} &rarr;
+							</a>
+						)}
+					</h2>
+					<ul class="m-0 list-none p-0">
+						{group.rows.map((row) => (
+							<li
+								class="attr-row grid grid-cols-1 sm:grid-cols-[minmax(0,22rem)_1fr] gap-x-5 gap-y-0.5 items-baseline border-b border-rule py-2"
+								data-search={row.search}
+								data-stability={row.stability}
+								data-registry={row.registry}
+								data-deprecated={row.deprecated ? "1" : "0"}
+							>
+								<a href={attributeHref(row.id)} class="font-mono text-[13.5px] font-medium no-underline hover:underline break-all">
+									{row.id}
+								</a>
+								<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+									<Pill
+										label={row.deprecated ? "Deprecated" : (STABILITY_LABEL[row.stability] ?? row.stability)}
+										class={stabilityClass(row.stability, row.deprecated)}
+									/>
+									{row.registry === "genai" && (
+										<Pill label="GenAI" class="text-rc bg-rc-bg" title="Defined in the GenAI conventions registry" />
+									)}
+									{row.renamedTo && (
+										<a href={attributeHref(row.renamedTo)} class="font-mono text-[12.5px] text-muted">
+											&rarr; {row.renamedTo}
+										</a>
+									)}
+									<span class="text-[13px] text-muted truncate">{row.brief}</span>
+								</div>
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+	</div>
 
 	<p id="empty" class="mt-8 text-muted" hidden>No attribute matches that filter.</p>
 </Shell>
@@ -136,12 +181,21 @@ const counts = {
 	// Plain DOM filtering: ~950 rows is well within what the browser handles
 	// without a framework, and it keeps the page working as a static document.
 	const input = document.getElementById("q") as HTMLInputElement
-	const rows = Array.from(document.querySelectorAll<HTMLElement>(".attr-row"))
+	const domainSelect = document.getElementById("domain") as HTMLSelectElement
+	const groups = Array.from(document.querySelectorAll<HTMLElement>(".ns-group")).map((element) => ({
+		element,
+		namespace: element.dataset["namespace"] ?? "",
+		domain: element.dataset["domain"] ?? "",
+		count: element.querySelector(".ns-count") as HTMLElement,
+		rows: Array.from(element.querySelectorAll<HTMLElement>(".attr-row")),
+	}))
+	const indexLinks = Array.from(document.querySelectorAll<HTMLElement>("[data-index]"))
 	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".filter-btn"))
 	const count = document.getElementById("count") as HTMLElement
 	const empty = document.getElementById("empty") as HTMLElement
 
 	let status = "all"
+	const total = groups.reduce((n, group) => n + group.rows.length, 0)
 
 	const matchesStatus = (row: HTMLElement) => {
 		if (status === "all") return true
@@ -152,17 +206,35 @@ const counts = {
 
 	function apply() {
 		const query = input.value.trim().toLowerCase()
+		const domain = domainSelect.value
 		let visible = 0
-		for (const row of rows) {
-			const show = matchesStatus(row) && (query === "" || (row.dataset["search"] ?? "").includes(query))
-			row.hidden = !show
-			if (show) visible++
+		const shown = new Set<string>()
+
+		for (const group of groups) {
+			if (domain !== "all" && group.domain !== domain) {
+				group.element.hidden = true
+				continue
+			}
+			let inGroup = 0
+			for (const row of group.rows) {
+				const show = matchesStatus(row) && (query === "" || (row.dataset["search"] ?? "").includes(query))
+				row.hidden = !show
+				if (show) inGroup++
+			}
+			group.count.textContent = inGroup === group.rows.length ? `${inGroup} attributes` : `${inGroup} of ${group.rows.length}`
+			group.element.hidden = inGroup === 0
+			if (inGroup > 0) shown.add(group.namespace)
+			visible += inGroup
 		}
-		count.textContent = `${visible} of ${rows.length} attributes`
+
+		for (const link of indexLinks) link.hidden = !shown.has(link.dataset["index"] ?? "")
+
+		count.textContent = `${visible} of ${total} attributes in ${shown.size} namespace${shown.size === 1 ? "" : "s"}`
 		empty.hidden = visible > 0
 	}
 
 	input.addEventListener("input", apply)
+	domainSelect.addEventListener("change", apply)
 	for (const button of buttons) {
 		button.addEventListener("click", () => {
 			status = button.dataset["filter"] ?? "all"
@@ -171,7 +243,7 @@ const counts = {
 		})
 	}
 
-	// `?q=` and `?registry=` make a filtered view linkable.
+	// `?q=`, `?registry=` and `?domain=` make a filtered view linkable.
 	const params = new URLSearchParams(location.search)
 	const initial = params.get("q")
 	if (initial) input.value = initial
@@ -179,5 +251,7 @@ const counts = {
 		status = "genai"
 		for (const button of buttons) button.toggleAttribute("data-on", button.dataset["filter"] === "genai")
 	}
+	const domain = params.get("domain")
+	if (domain && Array.from(domainSelect.options).some((option) => option.value === domain)) domainSelect.value = domain
 	apply()
 </script>

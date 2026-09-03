@@ -1,0 +1,76 @@
+---
+import Shell from "../../layouts/Shell.astro"
+import { catalog } from "../../../src/model/catalog.ts"
+import { buildDomains } from "../../../src/model/domains.ts"
+
+/** Counts read as prose here, and one of them is genuinely 1. */
+const count = (n: number, one: string, many = `${one}s`) => (n > 0 ? `${n} ${n === 1 ? one : many}` : undefined)
+
+const data = await catalog()
+const domains = buildDomains(data).map((domain) => ({
+	...domain,
+	signals: domain.spans.length + domain.events.length + domain.entities.length,
+}))
+
+const total = domains.reduce((n, domain) => n + domain.attributes.length, 0)
+---
+
+<Shell
+	title="Domains"
+	description="The OpenTelemetry conventions by topic: databases, HTTP, messaging, Kubernetes, GenAI and more, each pulling together its attributes, metrics, spans and the specification rules that bind them."
+>
+	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Domains</h1>
+		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
+	</div>
+	<p class="mt-2 mb-0 text-muted max-w-[66ch]">
+		The conventions ship as a flat registry, but nobody arrives asking what is in the registry &mdash;
+		they arrive asking about databases, or about HTTP. Each domain below gathers one topic's
+		attributes, metrics and signals from both registries, and points at the part of the specification
+		that binds them. {total} attributes, in {domains.length} topics.
+	</p>
+
+	<div class="mt-8 grid gap-x-8 gap-y-7 sm:grid-cols-2">
+		{
+			domains.map((domain) => (
+				// `min-w-0`: the namespace line below is `truncate`, and a grid item
+				// defaults to min-width:auto, so without this the nowrap text widens
+				// the track and the whole page scrolls sideways on a phone.
+				<article class="min-w-0">
+					<h2 class="m-0 flex flex-wrap items-baseline gap-x-2.5 text-[15px] font-semibold tracking-tight">
+						<a href={`/domains/${domain.slug}`} class="no-underline hover:underline">
+							{domain.title}
+						</a>
+						<span class="font-mono text-[12.5px] font-normal text-faint">{domain.attributes.length} attributes</span>
+					</h2>
+					<p class="mt-1 mb-0 font-mono text-[12px] text-muted truncate">
+						{domain.namespaces
+							.slice(0, 5)
+							.map((ns) => ns.name)
+							.join(" · ")}
+						{domain.namespaces.length > 5 && ` · +${domain.namespaces.length - 5}`}
+					</p>
+					<p class="mt-2 mb-0 text-[13.5px] text-muted">{domain.blurb}</p>
+					<p class="mt-1.5 mb-0 text-[12.5px] text-faint">
+						{[
+							count(domain.metrics.length, "metric"),
+							count(domain.spans.length, "span"),
+							count(domain.events.length, "event"),
+							count(domain.entities.length, "entity", "entities"),
+							domain.deprecated > 0 && `${domain.deprecated} deprecated`,
+						]
+							.filter(Boolean)
+							.join(" · ")}
+					</p>
+				</article>
+			))
+		}
+	</div>
+
+	<p class="mt-12 mb-0 text-[13px] text-faint max-w-[66ch]">
+		Grouping is the one editorial judgement on this site: upstream defines the namespaces, not the
+		topics they belong to. Every namespace the registry defines is placed in exactly one domain, and a
+		test fails if a release adds one that is not. The flat list is still there, under{" "}
+		<a href="/attributes">Registry</a>.
+	</p>
+</Shell>

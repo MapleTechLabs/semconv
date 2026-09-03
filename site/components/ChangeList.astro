@@ -55,7 +55,7 @@ const shortId = (change: Change) => {
 					) : (
 						<span class="font-mono text-[13.5px] font-medium break-all">{label}</span>
 					)}
-					<span class="text-muted text-[13.5px] basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
+					<span class="text-muted text-[13.5px] basis-full sm:basis-auto min-w-0 [overflow-wrap:anywhere]" set:html={inlineCode(change.detail)} />
 				</li>
 			)
 		})

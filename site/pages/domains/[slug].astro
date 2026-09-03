@@ -1,0 +1,358 @@
+---
+import ChangeList from "../../components/ChangeList.astro"
+import Pill from "../../components/Pill.astro"
+import Shell from "../../layouts/Shell.astro"
+import { catalog, SOURCE_REPO } from "../../../src/model/catalog.ts"
+import { buildDomains, DOMAINS } from "../../../src/model/domains.ts"
+import { attributeHref, inlineCode, severityClass, STABILITY_LABEL, stabilityClass } from "../../lib/format.ts"
+
+export function getStaticPaths() {
+	return DOMAINS.map((domain) => ({ params: { slug: domain.slug } }))
+}
+
+const { slug } = Astro.params
+const data = await catalog()
+const domain = buildDomains(data).find((d) => d.slug === slug)
+if (!domain) throw new Error(`unknown domain: ${slug}`)
+
+const linkable = new Set(data.attributes.map((a) => a.id))
+
+const plain = (text: string) =>
+	text
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+		.replace(/`/g, "")
+		.replace(/\s+/g, " ")
+		.trim()
+
+/** Attribute rows keep the registry's grouping, so a namespace reads as a unit. */
+const byNamespace = domain.namespaces.map((ns) => ({
+	...ns,
+	rows: domain.attributes.filter(({ attribute }) => attribute.namespace === ns.name),
+}))
+
+const signalGroups = [
+	{ label: "Spans", signals: domain.spans },
+	{ label: "Events", signals: domain.events },
+	{ label: "Entities", signals: domain.entities },
+].filter((group) => group.signals.length > 0)
+
+const protoFiles = [...new Set(domain.governance.map((g) => g.protoFile).filter((f): f is string => Boolean(f)))]
+
+/** Requirement sections come from two repositories; the path says which. */
+const sectionUrl = (path: string, anchor: string) =>
+	path.startsWith("specification/")
+		? `${SOURCE_REPO.spec}/blob/v${data.spec.latest.version}/${path}#${anchor}`
+		: `${SOURCE_REPO.proto}/blob/v${data.proto.latest.version}/${path}#${anchor}`
+
+const shownRequirements = domain.requirements.slice(0, 8)
+
+const jump = [
+	signalGroups.length > 0 && { href: "#signals", label: "Signals" },
+	domain.metrics.length > 0 && { href: "#metrics", label: `Metrics ${domain.metrics.length}` },
+	{ href: "#specification", label: "Specification" },
+	{ href: "#attributes", label: `Attributes ${domain.attributes.length}` },
+	domain.changes.length > 0 && { href: "#changes", label: "Recent changes" },
+].filter((item): item is { href: string; label: string } => Boolean(item))
+
+const stats = [
+	{ value: domain.attributes.length, label: "attributes" },
+	{ value: domain.metrics.length, label: "metrics" },
+	{ value: domain.spans.length + domain.events.length + domain.entities.length, label: "signals" },
+	{ value: domain.stable, label: "stable" },
+	{ value: domain.deprecated, label: "deprecated" },
+]
+
+const description = `${domain.title} in OpenTelemetry: ${domain.attributes.length} attributes, ${domain.metrics.length} metrics and ${domain.spans.length + domain.events.length + domain.entities.length} signals, with the specification requirements that bind them.`
+---
+
+<Shell title={domain.title} description={description} wide>
+	<nav class="text-[13px] text-faint">
+		<a href="/domains">Domains</a> / {domain.title}
+	</nav>
+
+	<div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">{domain.title}</h1>
+		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
+	</div>
+	<p class="mt-2 mb-0 text-muted max-w-[70ch]">{domain.blurb}</p>
+
+	<p class="mt-3 mb-0 flex flex-wrap gap-x-2.5 gap-y-1 font-mono text-[12.5px] text-muted">
+		{
+			domain.namespaces.map((ns) => (
+				<a href={`/attributes?q=${encodeURIComponent(`${ns.name}.`)}`} class="no-underline hover:underline">
+					{ns.name}
+					<span class="text-faint"> {ns.count}</span>
+				</a>
+			))
+		}
+	</p>
+
+	<dl class="mt-7 grid grid-cols-3 gap-x-8 gap-y-4 sm:grid-cols-5 max-w-3xl">
+		{
+			stats.map((stat) => (
+				<div class="m-0">
+					<dt class="text-[12px] uppercase tracking-wide text-faint">{stat.label}</dt>
+					<dd class="m-0 font-mono text-[1.5rem] leading-none font-medium">{stat.value}</dd>
+				</div>
+			))
+		}
+	</dl>
+
+	<nav class="mt-7 flex flex-wrap gap-x-4 gap-y-1 border-y border-rule py-2 text-[13px] text-muted">
+		{jump.map((item) => <a href={item.href} class="no-underline hover:text-ink">{item.label}</a>)}
+	</nav>
+
+	{
+		signalGroups.length > 0 && (
+			<section id="signals" class="mt-9">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Signals</h2>
+				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
+					What this domain emits, and the attributes each one carries, most strongly required first. An
+					attribute marked <span class="text-breaking">*</span> is required on that signal;{" "}
+					<span class="text-notable">*</span> is conditionally required.
+				</p>
+				<div class="mt-4 flex flex-col gap-6">
+					{signalGroups.map((group) => (
+						<div>
+							<h3 class="m-0 text-[13px] font-semibold text-muted">
+								{group.label} <span class="font-mono font-normal text-faint">{group.signals.length}</span>
+							</h3>
+							<ul class="mt-1.5 m-0 list-none p-0">
+								{group.signals.map((signal) => (
+									<li class="border-b border-rule py-2">
+										<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+											<span class="font-mono text-[13.5px] font-medium break-all">
+												{signal.name.replace(/^(span|event|entity)\./, "")}
+											</span>
+											{signal.spanKind && (
+												<span class="text-[11px] uppercase tracking-wide text-faint">{signal.spanKind}</span>
+											)}
+											<Pill
+												label={
+													signal.deprecated
+														? "Deprecated"
+														: (STABILITY_LABEL[signal.stability] ?? signal.stability)
+												}
+												class={stabilityClass(signal.stability, Boolean(signal.deprecated))}
+											/>
+											<span class="text-[13px] text-muted">{plain(signal.brief).slice(0, 120)}</span>
+										</div>
+										{signal.attributes.length > 0 && (
+											<p class="mt-1 mb-0 flex flex-wrap gap-x-2.5 gap-y-0.5 font-mono text-[12px] text-muted">
+												{(domain.signalAttributes.get(signal.id) ?? []).slice(0, 12).map((entry) => (
+													<span>
+														{linkable.has(entry.id) ? (
+															<a href={attributeHref(entry.id)} class="no-underline hover:underline">
+																{entry.id}
+															</a>
+														) : (
+															entry.id
+														)}
+														{entry.level === "required" && <span class="text-breaking">*</span>}
+														{entry.level === "conditionally_required" && <span class="text-notable">*</span>}
+													</span>
+												))}
+												{signal.attributes.length > 12 && (
+													<span class="text-faint">+{signal.attributes.length - 12} more</span>
+												)}
+											</p>
+										)}
+									</li>
+								))}
+							</ul>
+						</div>
+					))}
+				</div>
+			</section>
+		)
+	}
+
+	{
+		domain.metrics.length > 0 && (
+			<section id="metrics" class="mt-10">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+					Metrics <span class="font-mono normal-case tracking-normal">{domain.metrics.length}</span>
+				</h2>
+				<ul class="mt-2 m-0 list-none p-0">
+					{domain.metrics.map((metric) => (
+						<li class="grid gap-x-5 gap-y-1 sm:grid-cols-[minmax(0,24rem)_1fr] items-baseline border-b border-rule py-2">
+							<span class="font-mono text-[13.5px] break-all">{metric.name}</span>
+							<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+								<Pill
+									label={
+										metric.deprecated ? "Deprecated" : (STABILITY_LABEL[metric.stability] ?? metric.stability)
+									}
+									class={stabilityClass(metric.stability, Boolean(metric.deprecated))}
+								/>
+								<span class="font-mono text-[12px] text-faint">
+									{metric.instrument} · {metric.unit || "1"}
+								</span>
+								<span class="text-[13px] text-muted truncate">{plain(metric.brief).slice(0, 140)}</span>
+							</div>
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	<section id="specification" class="mt-11">
+		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Specification</h2>
+
+		{
+			domain.governance.length > 0 && (
+				<ul class="mt-2 m-0 list-none p-0">
+					{domain.governance.map((entry) => (
+						<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2">
+							<span class="text-[13.5px] font-medium">{entry.what}</span>
+							<span class="text-[13.5px] text-muted">
+								are bound by the{" "}
+								<a href={`/spec#area-${entry.area}`} class="font-mono text-[13px]">
+									{entry.area}
+								</a>{" "}
+								specification &mdash; {entry.count} requirements across {entry.documents} documents,{" "}
+								{entry.binding} of them MUST or SHALL.
+							</span>
+						</li>
+					))}
+				</ul>
+			)
+		}
+
+		{
+			shownRequirements.length > 0 ? (
+				<div class="mt-6">
+					<h3 class="m-0 text-[13px] font-semibold text-muted">
+						Requirements that name this domain{" "}
+						<span class="font-mono font-normal text-faint">{domain.requirements.length}</span>
+					</h3>
+					<ul class="mt-2 m-0 list-none p-0">
+						{shownRequirements.map(({ statement, section }) => (
+							<li class="border-b border-rule py-2">
+								<div class="flex flex-wrap items-baseline gap-x-2.5">
+									<Pill
+										label={statement.level}
+										class={statement.level.startsWith("MUST") ? severityClass("notable") : "text-muted bg-rule/50"}
+									/>
+									<a href={sectionUrl(section.path, section.anchor)} class="text-[12.5px] text-muted">
+										{section.title}
+									</a>
+									<span class="text-[11px] uppercase tracking-wide text-faint">{section.status}</span>
+								</div>
+								<p class="mt-1 mb-0 text-[13.5px] max-w-[80ch]" set:html={inlineCode(statement.text)} />
+							</li>
+						))}
+					</ul>
+					{domain.requirements.length > shownRequirements.length && (
+						<p class="mt-2 mb-0 text-[13px]">
+							<a href={`/search?q=${encodeURIComponent(domain.def.keywords?.[0] ?? domain.title)}&type=requirement`} class="text-muted">
+								All {domain.requirements.length} matching requirements
+							</a>
+						</p>
+					)}
+				</div>
+			) : (
+				<p class="mt-4 mb-0 text-[13.5px] text-muted max-w-[70ch]">
+					The specification prose never names this domain. That is not an omission: the specification
+					defines signals, not subject matter &mdash; what binds{" "}
+					<span class="font-mono text-[0.92em]">{domain.namespaces[0]?.name}</span> telemetry is the
+					general rules above, and the conventions themselves carry the rest.
+				</p>
+			)
+		}
+
+		{
+			protoFiles.length > 0 && (
+				<p class="mt-5 mb-0 text-[13px] text-muted max-w-[70ch]">
+					On the wire, this lands in{" "}
+					{protoFiles.map((file, i) => (
+						<>
+							{i > 0 && ", "}
+							<a href={`${SOURCE_REPO.proto}/blob/v${data.proto.latest.version}/${file}`} class="font-mono text-[12.5px]">
+								{file.replace("opentelemetry/proto/", "").replace(/\.proto$/, "")}
+							</a>
+						</>
+					))}
+					. Field-by-field definitions are under <a href="/otlp">OTLP</a>.
+				</p>
+			)
+		}
+	</section>
+
+	<section id="attributes" class="mt-11">
+		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+			Attributes <span class="font-mono normal-case tracking-normal">{domain.attributes.length}</span>
+		</h2>
+		<div class="mt-4 flex flex-col gap-7">
+			{
+				byNamespace.map((group) => (
+					<div>
+						<h3 class="m-0 flex flex-wrap items-baseline gap-x-2.5 font-mono text-[13.5px] font-semibold">
+							{group.name}
+							<span class="font-sans text-[12px] font-normal text-faint">{group.count} attributes</span>
+						</h3>
+						<ul class="mt-1.5 m-0 list-none p-0">
+							{group.rows.map(({ attribute, registry }) => (
+								<li class="grid gap-x-5 gap-y-1 sm:grid-cols-[minmax(0,22rem)_1fr] items-baseline border-b border-rule py-2">
+									<a
+										href={attributeHref(attribute.id)}
+										class="font-mono text-[13.5px] font-medium no-underline hover:underline break-all"
+									>
+										{attribute.id}
+									</a>
+									<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+										<Pill
+											label={
+												attribute.deprecated
+													? "Deprecated"
+													: (STABILITY_LABEL[attribute.stability] ?? attribute.stability)
+											}
+											class={stabilityClass(attribute.stability, Boolean(attribute.deprecated))}
+										/>
+										{registry === "genai" && (
+											<Pill label="GenAI" class="text-rc bg-rc-bg" title="Defined in the GenAI conventions registry" />
+										)}
+										{attribute.deprecated?.renamedTo && (
+											<a href={attributeHref(attribute.deprecated.renamedTo)} class="font-mono text-[12.5px] text-muted">
+												&rarr; {attribute.deprecated.renamedTo}
+											</a>
+										)}
+										<span class="text-[13px] text-muted truncate">{plain(attribute.brief).slice(0, 160)}</span>
+									</div>
+								</li>
+							))}
+						</ul>
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	{
+		domain.changes.length > 0 && (
+			<section id="changes" class="mt-11">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Recent changes</h2>
+				<p class="mt-1 mb-0 text-[13px] text-muted">
+					Breaking and notable changes to this domain across the last{" "}
+					{Math.min(6, data.semconv.diffs.length)} semantic-conventions releases.
+				</p>
+				<div class="mt-3">
+					<ChangeList changes={domain.changes.slice(0, 10).map((entry) => entry.change)} linkable={linkable} />
+				</div>
+				{domain.changes.length > 10 && (
+					<p class="mt-2 mb-0 text-[13px]">
+						<a href={`/releases/semconv/${data.semconv.latest.version}`} class="text-muted">
+							{domain.changes.length - 10} more in the full release history
+						</a>
+					</p>
+				)}
+			</section>
+		)
+	}
+
+	<p class="mt-12 mb-0 text-[13px] text-faint max-w-[70ch]">
+		Topics are this site's grouping of upstream namespaces, not a structure the OpenTelemetry project
+		publishes. <a href={`/api/domains.json`} class="font-mono">JSON</a> ·{" "}
+		<a href="/domains">All domains</a>
+	</p>
+</Shell>

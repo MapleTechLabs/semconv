@@ -2,6 +2,7 @@
 import Pill from "../../components/Pill.astro"
 import Shell from "../../layouts/Shell.astro"
 import { catalog } from "../../../src/model/catalog.ts"
+import { domainForNamespace } from "../../../src/model/domains.ts"
 import { SOURCE_REPO } from "../../../src/model/catalog.ts"
 import {
 	attributeHref,
@@ -34,6 +35,7 @@ const data = await catalog()
 // Relative links in registry prose resolve against the release being rendered.
 setSourceTag(registry === "genai" ? "main" : `v${data.semconv.latest.version}`)
 
+const domain = domainForNamespace(attribute.namespace)
 const events = [...(data.lifecycle.get(attribute.id) ?? [])].reverse()
 const successor = attribute.deprecated?.renamedTo
 const predecessors = [...data.renames.entries()].filter(([, to]) => to === attribute.id).map(([from]) => from)
@@ -70,9 +72,10 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 ---
 
 <Shell title={attribute.id} description={description.slice(0, 300)}>
-	<nav class="text-[13px] text-faint">
-		<a href="/attributes">Registry</a> /
-		<a href={`/attributes?q=${encodeURIComponent(`${attribute.namespace}.`)}`}>{attribute.namespace}</a>
+	<nav class="text-[13px] text-faint flex flex-wrap gap-x-1.5">
+		<a href="/attributes">Registry</a>
+		{domain && <span>/ <a href={`/domains/${domain.slug}`}>{domain.title}</a></span>}
+		<span>/ <a href={`/attributes?q=${encodeURIComponent(`${attribute.namespace}.`)}`}>{attribute.namespace}</a></span>
 	</nav>
 
 	<h1 class="mt-2 mb-0 font-mono text-[1.55rem] font-semibold tracking-tight break-all">{attribute.id}</h1>

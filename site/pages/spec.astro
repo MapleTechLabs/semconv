@@ -78,11 +78,14 @@ const recent = data.spec.diffs.slice(0, 3).flatMap((diff) =>
 							</a>
 							<a
 								href={`${SOURCE_REPO.spec}/blob/v${version}/${change.href?.replace("#", "#")}`}
-								class="font-mono text-[12.5px] shrink-0"
+								class="font-mono text-[12.5px] min-w-0 break-all"
 							>
 								{change.id.split("/").slice(-1)[0]}
 							</a>
-							<span class="text-[13.5px] text-muted basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
+							<span
+								class="text-[13.5px] text-muted basis-full sm:basis-auto min-w-0 [overflow-wrap:anywhere]"
+								set:html={inlineCode(change.detail)}
+							/>
 						</li>
 					))}
 				</ul>
@@ -112,7 +115,7 @@ const recent = data.spec.diffs.slice(0, 3).flatMap((diff) =>
 						{documents
 							.filter((doc) => doc.area === area)
 							.map((doc) => (
-								<li class="grid grid-cols-[minmax(0,26rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2">
+								<li class="grid grid-cols-1 sm:grid-cols-[minmax(0,26rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2">
 									<a
 										href={`${SOURCE_REPO.spec}/blob/${tag}/${doc.path}`}
 										class="font-mono text-[13px] no-underline hover:underline break-all"

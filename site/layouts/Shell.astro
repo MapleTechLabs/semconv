@@ -15,6 +15,7 @@ const { title, description, wide = false } = Astro.props
 const path = Astro.url.pathname
 const nav = [
 	{ href: "/", label: "Changes" },
+	{ href: "/domains", label: "Domains" },
 	{ href: "/attributes", label: "Registry" },
 	{ href: "/spec", label: "Spec" },
 	{ href: "/otlp", label: "OTLP" },
@@ -55,7 +56,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 					<span class="font-mono text-[13px] text-accent">◇</span>
 					{SITE.name}
 				</a>
-				<nav class="flex items-center gap-5 text-[13.5px] text-muted">
+				<nav class="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13.5px] text-muted">
 					{
 						nav.map((item) => (
 							<a
@@ -70,6 +71,19 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 						))
 					}
 				</nav>
+
+				<form action="/search" method="get" role="search" class="w-full sm:ml-auto sm:w-auto sm:flex-1 sm:min-w-[9rem] sm:max-w-[15rem]">
+					<input
+						id="site-search"
+						type="search"
+						name="q"
+						placeholder="Search everything…"
+						aria-label="Search"
+						autocomplete="off"
+						spellcheck="false"
+						class="w-full rounded-md border border-rule bg-surface px-2.5 py-1 font-mono text-[12.5px] text-ink outline-none focus:border-rule-strong"
+					/>
+				</form>
 			</div>
 		</header>
 
@@ -104,5 +118,18 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 				</span>
 			</div>
 		</footer>
+		<script>
+			// `/` focuses search, the reflex on any reference site.
+			document.addEventListener("keydown", (event) => {
+				const target = event.target as HTMLElement | null
+				if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return
+				if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+				const field = document.getElementById("q") ?? document.getElementById("site-search")
+				if (!(field instanceof HTMLInputElement)) return
+				event.preventDefault()
+				field.focus()
+				field.select()
+			})
+		</script>
 	</body>
 </html>
