@@ -10,7 +10,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
+  issues: write
 
 jobs:
   sync:
@@ -44,25 +44,51 @@ jobs:
       # longer understands upstream - the PR should exist and fail loudly rather
       # than not exist at all.
       - name: Build and test
+        id: test
         if: steps.changed.outputs.any == 'true'
         run: bun run build && bun run test
         continue-on-error: true
 
-      - name: Open pull request
+      # The org disallows GitHub Actions from opening pull requests, so the job
+      # pushes a branch and files an issue with a compare link instead. Same
+      # review gate, one extra click: nothing lands on main without a human
+      # looking at the diff.
+      - name: Push branch
         if: steps.changed.outputs.any == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: sync/upstream
-          title: "data: ${{ steps.changed.outputs.versions }}"
-          commit-message: "data: ingest ${{ steps.changed.outputs.versions }}"
-          body: |
-            Automated ingest of newly published upstream releases.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B sync/upstream
+          git add data
+          git commit -m "data: ingest ${{ steps.changed.outputs.versions }}"
+          git push --force origin sync/upstream
 
-            Review the diff output before merging. If the test job failed, upstream
-            has changed a model, a document layout or the proto grammar in a way a
-            normalizer does not yet understand, and merging would publish wrong
-            history.
-          add-paths: data
+      - name: File an issue
+        if: steps.changed.outputs.any == 'true'
+        uses: actions/github-script@v7
+        env:
+          VERSIONS: ${{ steps.changed.outputs.versions }}
+          TESTS: ${{ steps.test.outcome }}
+        with:
+          script: |
+            const versions = process.env.VERSIONS
+            const passed = process.env.TESTS === "success"
+            const compare = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/main...sync/upstream`
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Upstream released ${versions}`,
+              labels: ["upstream-sync"],
+              body: [
+                `New upstream data is on \`sync/upstream\`: ${compare}`,
+                "",
+                passed
+                  ? "Tests passed against the new snapshots."
+                  : "**Tests failed against the new snapshots.** Upstream has changed a model, a document layout or the proto grammar in a way a normalizer does not yet understand. Merging as-is would publish wrong history — fix the normalizer first.",
+                "",
+                `Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ].join("\n"),
+            })
 
   # A silent scheduled job is indistinguishable from a broken one, so failure
   # has to surface somewhere a human looks.

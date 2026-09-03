@@ -62,6 +62,19 @@ The conventions are mid-migration between `definition/1` (one flat `groups:` lis
 `destination.*` and every `hw.*` metric to the newer format, and a format-1-only reader reports all
 of them as deleted from the registry.
 
+## Keeping the data current
+
+`.github/workflows/sync.yml` runs daily. It ingests any new upstream releases, and when `data/`
+actually changes it pushes `sync/upstream` and files an issue with a compare link. Upstream ships
+roughly monthly, so on most days it finds nothing and exits silently.
+
+Tests run against the new snapshots before the issue is filed, and the issue says whether they
+passed. A failure there means upstream changed a model, a document layout or the proto grammar in a
+way a normalizer does not yet understand — merging would publish wrong history.
+
+Deploys stay manual (`bun run deploy`), so nothing reaches the live site without someone looking at
+the diff first.
+
 ## For agents
 
 `/llms.txt` maps the machine-readable surface. `/api/*.json` is generated at build time and served
