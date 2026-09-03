@@ -106,5 +106,12 @@ Snapshots start at semconv v1.30.0, specification v1.42.0 and OTLP v1.4.0. Earli
 schemas and layouts different enough that diffing across them would report changes the projects
 never made.
 
-Source data is © the OpenTelemetry Authors, licensed Apache-2.0. This is an independent project and
-is not affiliated with the OpenTelemetry project, the CNCF, or the Linux Foundation.
+## Licence
+
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+The contents of `data/` are derived from the OpenTelemetry semantic-conventions, specification and
+proto repositories, © The OpenTelemetry Authors, also Apache-2.0.
+
+This is an independent project and is not affiliated with, endorsed by, or sponsored by the
+OpenTelemetry project, the CNCF, or the Linux Foundation.

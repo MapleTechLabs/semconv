@@ -1,0 +1,16 @@
+semconv.com
+Copyright 2026 Maple Tech Labs
+
+This product includes software developed at Maple Tech Labs (https://maple.dev).
+
+The contents of `data/` are derived from the following OpenTelemetry projects,
+each Copyright The OpenTelemetry Authors and licensed under the Apache License,
+Version 2.0:
+
+  - https://github.com/open-telemetry/semantic-conventions
+  - https://github.com/open-telemetry/opentelemetry-specification
+  - https://github.com/open-telemetry/opentelemetry-proto
+
+This project is not affiliated with, endorsed by, or sponsored by the
+OpenTelemetry project, the Cloud Native Computing Foundation, or the Linux
+Foundation. "OpenTelemetry" is a trademark of the Linux Foundation.

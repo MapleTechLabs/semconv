@@ -1,6 +1,8 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "semconv",
+	// "Maki Account", which is where the semconv.com zone lives.
+	"account_id": "189f0e30f67d42ffb26513efbc104cf1",
 	// Custom domains, not routes: Cloudflare issues and renews the certificate
 	// and points the apex at the Worker. Both require semconv.com to be using
 	// Cloudflare nameservers on this account; `wrangler deploy` sets them up.
