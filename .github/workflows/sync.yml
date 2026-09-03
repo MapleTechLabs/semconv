@@ -39,9 +39,6 @@ jobs:
             echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed 's#data/##; s#/#  v#; s#\.json\.gz##' | paste -sd', ' -)" >> "$GITHUB_OUTPUT"
           fi
 
-      # The tests assert against real releases, so a new snapshot that breaks
-      # them means the normalizer no longer understands upstream's model - the
-      # PR should exist and fail loudly rather than not exist at all.
       # Build first: the MCP worker tests read dist/. The tests assert against
       # real releases, so a new snapshot that breaks them means a normalizer no
       # longer understands upstream - the PR should exist and fail loudly rather
