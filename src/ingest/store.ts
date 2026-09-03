@@ -1,9 +1,28 @@
-import { Glob } from "bun"
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
+import { dirname } from "node:path"
+import { gunzipSync, gzipSync } from "node:zlib"
 import type { DataIndex, ReleaseRecord, SemconvSnapshot, Snapshot, SourceId } from "../model/types.ts"
 
-export const DATA_ROOT = new URL("../../data/", import.meta.url).pathname
+/**
+ * Deliberately built on `node:` APIs rather than Bun's. The ingest CLI runs
+ * under Bun, but Astro prerenders pages in a Node subprocess, and the same
+ * reader has to work in both.
+ */
+
+/**
+ * Resolved from the working directory rather than `import.meta.url`: the Astro
+ * build bundles these modules into `dist/.prerender/chunks/`, where a
+ * module-relative path points nowhere. Every entry point runs from the repo
+ * root; `OTEL_DATA_ROOT` is the escape hatch for anything that does not.
+ */
+export const DATA_ROOT = process.env["OTEL_DATA_ROOT"] ?? `${process.cwd()}/data/`
 
 const snapshotPath = (source: SourceId, version: string) => `${DATA_ROOT}${source}/${version}.json.gz`
+
+const writeFileEnsuringDir = async (path: string, contents: Uint8Array | string) => {
+	await mkdir(dirname(path), { recursive: true })
+	await writeFile(path, contents)
+}
 
 /**
  * Snapshots are stored gzipped and committed. Stable key order plus a fixed
@@ -12,33 +31,38 @@ const snapshotPath = (source: SourceId, version: string) => `${DATA_ROOT}${sourc
  * "upstream did not move".
  */
 export async function writeSnapshot(snapshot: Snapshot): Promise<void> {
-	const json = JSON.stringify(snapshot)
-	const gz = Bun.gzipSync(new TextEncoder().encode(json), { level: 9 })
-	await Bun.write(snapshotPath(snapshot.source, snapshot.version), gz)
+	const gz = gzipSync(Buffer.from(JSON.stringify(snapshot), "utf8"), { level: 9 })
+	await writeFileEnsuringDir(snapshotPath(snapshot.source, snapshot.version), gz)
 }
 
 export async function readSnapshot<T extends Snapshot = Snapshot>(source: SourceId, version: string): Promise<T> {
-	const file = Bun.file(snapshotPath(source, version))
-	const gz = new Uint8Array(await file.arrayBuffer())
-	return JSON.parse(new TextDecoder().decode(Bun.gunzipSync(gz))) as T
+	const gz = await readFile(snapshotPath(source, version))
+	return JSON.parse(gunzipSync(gz).toString("utf8")) as T
 }
 
 export const readSemconv = (version: string) => readSnapshot<SemconvSnapshot>("semconv", version)
 
 export async function hasSnapshot(source: SourceId, version: string): Promise<boolean> {
-	return await Bun.file(snapshotPath(source, version)).exists()
+	try {
+		await readFile(snapshotPath(source, version))
+		return true
+	} catch {
+		return false
+	}
 }
 
 /** Versions present on disk, newest first. */
 export async function listSnapshots(source: SourceId): Promise<string[]> {
-	const dir = `${DATA_ROOT}${source}`
-	const versions: string[] = []
 	try {
-		for await (const f of new Glob("*.json.gz").scan(dir)) versions.push(f.replace(/\.json\.gz$/, ""))
+		const files = await readdir(`${DATA_ROOT}${source}`)
+		return files
+			.filter((f) => f.endsWith(".json.gz"))
+			.map((f) => f.replace(/\.json\.gz$/, ""))
+			.sort(compareVersions)
+			.reverse()
 	} catch {
 		return []
 	}
-	return versions.sort(compareVersions).reverse()
 }
 
 export function compareVersions(a: string, b: string): number {
@@ -54,23 +78,24 @@ export function compareVersions(a: string, b: string): number {
 const INDEX_PATH = `${DATA_ROOT}index.json`
 
 export async function readIndex(): Promise<DataIndex> {
-	const file = Bun.file(INDEX_PATH)
-	if (!(await file.exists())) return { generatedAt: new Date(0).toISOString(), releases: [] }
-	return (await file.json()) as DataIndex
+	try {
+		return JSON.parse(await readFile(INDEX_PATH, "utf8")) as DataIndex
+	} catch {
+		return { generatedAt: new Date(0).toISOString(), releases: [] }
+	}
 }
 
 /**
  * Merges new release records into the index. `generatedAt` deliberately tracks
- * the newest release rather than wall-clock time — a re-run that finds nothing
+ * the newest release rather than wall-clock time - a re-run that finds nothing
  * new must not produce a diff.
  */
 export async function writeIndex(releases: readonly ReleaseRecord[]): Promise<void> {
 	const merged = new Map<string, ReleaseRecord>()
 	for (const r of [...(await readIndex()).releases, ...releases]) merged.set(`${r.source}@${r.tag}`, r)
-	const sorted = [...merged.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.source.localeCompare(b.source))
-	const index: DataIndex = {
-		generatedAt: sorted[0]?.publishedAt ?? new Date(0).toISOString(),
-		releases: sorted,
-	}
-	await Bun.write(INDEX_PATH, `${JSON.stringify(index, null, "\t")}\n`)
+	const sorted = [...merged.values()].sort(
+		(a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.source.localeCompare(b.source),
+	)
+	const index: DataIndex = { generatedAt: sorted[0]?.publishedAt ?? new Date(0).toISOString(), releases: sorted }
+	await writeFileEnsuringDir(INDEX_PATH, `${JSON.stringify(index, null, "\t")}\n`)
 }

@@ -5,12 +5,19 @@
 	"scripts": {
 		"ingest": "bun run src/ingest/main.ts",
 		"test": "bun test",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"dev": "astro dev --port 4321",
+		"build": "astro build",
+		"preview": "astro preview --port 4321",
+		"sync": "astro sync"
 	},
 	"dependencies": {
 		"@effect/platform": "^0.97.1",
 		"@effect/platform-bun": "^0.91.2",
+		"@tailwindcss/vite": "^4.3.3",
+		"astro": "^7.2.10",
 		"effect": "^3.19.4",
+		"tailwindcss": "^4.3.3",
 		"yaml": "^2.8.1"
 	},
 	"devDependencies": {

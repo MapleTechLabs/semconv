@@ -1,0 +1,13 @@
+---
+interface Props {
+	label: string
+	class?: string
+	title?: string
+}
+const { label, class: cls = "", title } = Astro.props
+---
+
+<span
+	class:list={["inline-block rounded px-1.5 py-px text-[11px] font-medium tracking-wide uppercase", cls]}
+	title={title}>{label}</span
+>

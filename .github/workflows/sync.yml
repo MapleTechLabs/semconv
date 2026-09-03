@@ -1,0 +1,89 @@
+name: Sync upstream releases
+
+# Upstream ships roughly monthly, so this is quiet by design: on most days the
+# ingest finds nothing, `data/` is byte-identical, and the job ends without
+# opening anything.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      - name: Ingest new releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun run ingest
+
+      - name: Detect changes
+        id: changed
+        run: |
+          if git diff --quiet -- data; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+            echo "versions=$(git diff --name-only -- data/semconv | sed 's#.*/##; s#\.json\.gz##' | paste -sd, -)" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The tests assert against real releases, so a new snapshot that breaks
+      # them means the normalizer no longer understands upstream's model - the
+      # PR should exist and fail loudly rather than not exist at all.
+      - name: Test
+        if: steps.changed.outputs.any == 'true'
+        run: bun run test
+        continue-on-error: true
+
+      - name: Open pull request
+        if: steps.changed.outputs.any == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/semconv
+          title: "data: semantic conventions ${{ steps.changed.outputs.versions }}"
+          commit-message: "data: ingest semantic conventions ${{ steps.changed.outputs.versions }}"
+          body: |
+            Automated ingest of newly published semantic-conventions releases.
+
+            Review the diff engine output before merging — if the test job failed,
+            upstream has changed the model in a way the normalizer does not yet
+            understand, and merging would publish wrong history.
+          add-paths: data
+
+  # A silent scheduled job is indistinguishable from a broken one, so failure
+  # has to surface somewhere a human looks.
+  notify:
+    needs: sync
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Upstream sync failed"
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "sync-failure",
+            })
+            if (issues.some((issue) => issue.title === title)) return
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              labels: ["sync-failure"],
+              body: `The scheduled ingest failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            })

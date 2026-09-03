@@ -1,0 +1,127 @@
+---
+import ChangeList from "../components/ChangeList.astro"
+import Pill from "../components/Pill.astro"
+import Shell from "../layouts/Shell.astro"
+import { catalog } from "../../src/model/catalog.ts"
+import { formatDate, severityClass } from "../lib/format.ts"
+import { SITE } from "../lib/site.ts"
+
+const data = await catalog()
+const linkable = new Set(data.attributes.map((a) => a.id))
+const latestRelease = data.releases.find((r) => r.version === data.latest.version)
+
+const deprecatedCount = data.attributes.filter((a) => a.deprecated).length
+const stableCount = data.attributes.filter((a) => a.stability === "stable" && !a.deprecated).length
+
+const stats = [
+	{ value: data.attributes.length, label: "attributes tracked" },
+	{ value: stableCount, label: "of them stable" },
+	{ value: deprecatedCount, label: "deprecated" },
+	{ value: data.renames.size, label: "with a known successor" },
+]
+
+/** The feed shows the changes that carry consequence; editorial churn is a link. */
+const feed = data.diffs.map((diff) => {
+	const release = data.releases.find((r) => r.version === diff.to)
+	return {
+		diff,
+		release,
+		significant: diff.changes.filter((c) => c.severity !== "informational"),
+	}
+})
+---
+
+<Shell title={SITE.name} description={SITE.description}>
+	<section class="border-b border-rule pb-9">
+		<h1 class="m-0 text-[2.1rem] leading-[1.15] font-semibold tracking-[-0.02em] max-w-[20ch]">
+			{SITE.tagline}
+		</h1>
+		<p class="mt-4 mb-0 max-w-[62ch] text-muted">
+			The conventions ship a machine-readable registry, and every deprecation in it names its
+			replacement. This reads that registry at every release and tells you what moved &mdash; which
+			attributes were renamed, which were promoted to stable, and which of the keys your code writes
+			today are already on their way out.
+		</p>
+
+		<dl class="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4 max-w-2xl">
+			{
+				stats.map((stat) => (
+					<div class="m-0">
+						<dt class="text-[12px] uppercase tracking-wide text-faint">{stat.label}</dt>
+						<dd class="m-0 font-mono text-[1.6rem] leading-none font-medium">{stat.value}</dd>
+					</div>
+				))
+			}
+		</dl>
+
+		<p class="mt-7 mb-0 text-[13.5px] text-muted">
+			Tracking <strong class="font-mono font-medium text-ink">{data.versions.length}</strong> releases,
+			v{data.versions.at(-1)} to <a
+				href={`/releases/${data.latest.version}`}
+				class="font-mono font-medium text-ink">v{data.latest.version}</a
+			>{latestRelease && <span> &mdash; published {formatDate(latestRelease.publishedAt)}</span>}.
+		</p>
+	</section>
+
+	<section class="mt-10">
+		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Release history</h2>
+
+		<div class="mt-5 flex flex-col gap-9">
+			{
+				feed.map(({ diff, release, significant }) => (
+					<article>
+						<header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<h3 class="m-0 font-mono text-[1.05rem] font-semibold tracking-tight">
+								<a href={`/releases/${diff.to}`} class="no-underline hover:underline">
+									v{diff.to}
+								</a>
+							</h3>
+							{release && (
+								<time class="text-[13px] text-faint" datetime={release.publishedAt}>
+									{formatDate(release.publishedAt)}
+								</time>
+							)}
+							<span class="flex gap-1.5 ml-auto">
+								{diff.counts.breaking > 0 && (
+									<Pill
+										label={`${diff.counts.breaking} breaking`}
+										class={severityClass("breaking")}
+									/>
+								)}
+								{diff.counts.notable > 0 && (
+									<Pill label={`${diff.counts.notable} notable`} class={severityClass("notable")} />
+								)}
+							</span>
+						</header>
+
+						{significant.length === 0 ? (
+							<p class="mt-2 mb-0 text-[13.5px] text-faint">
+								Editorial only &mdash; {diff.counts.informational} wording, example and guidance
+								changes.
+							</p>
+						) : (
+							<div class="mt-2">
+								<ChangeList changes={significant.slice(0, 8)} linkable={linkable} />
+							</div>
+						)}
+
+						<p class="mt-2.5 mb-0 text-[13px] text-faint flex flex-wrap gap-x-4">
+							<a href={`/releases/${diff.to}`} class="text-muted">
+								{significant.length > 8
+									? `All ${significant.length} notable changes`
+									: `Full diff from v${diff.from}`}
+								{diff.counts.informational > 0 && ` + ${diff.counts.informational} editorial`}
+							</a>
+							{release && <a href={release.url}>Upstream release notes</a>}
+						</p>
+					</article>
+				))
+			}
+		</div>
+
+		<p class="mt-10 mb-0 text-[13px] text-faint">
+			History starts at v{data.versions.at(-1)}. Earlier releases used a model schema different enough
+			that diffing across it would report changes the project never made.
+		</p>
+	</section>
+</Shell>

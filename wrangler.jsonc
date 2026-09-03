@@ -1,0 +1,11 @@
+{
+	// Static assets only - the site is fully prerendered, and every JSON
+	// endpoint is a file on disk. There is no Worker script.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "semconv-watch",
+	"compatibility_date": "2026-09-01",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "404-page"
+	}
+}

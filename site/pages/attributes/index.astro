@@ -1,0 +1,149 @@
+---
+import Pill from "../../components/Pill.astro"
+import Shell from "../../layouts/Shell.astro"
+import { catalog } from "../../../src/model/catalog.ts"
+import { attributeHref, STABILITY_LABEL, stabilityClass } from "../../lib/format.ts"
+
+const data = await catalog()
+
+const rows = data.attributes.map((a) => ({
+	id: a.id,
+	brief: a.brief.replace(/\s+/g, " ").slice(0, 180),
+	namespace: a.namespace,
+	stability: a.stability,
+	deprecated: Boolean(a.deprecated),
+	renamedTo: a.deprecated?.renamedTo ?? "",
+	type: a.type,
+	// One lowercase haystack per row keeps the filter a single substring test.
+	search: `${a.id} ${a.brief} ${a.type}`.toLowerCase(),
+}))
+
+const counts = {
+	all: rows.length,
+	stable: rows.filter((r) => r.stability === "stable" && !r.deprecated).length,
+	deprecated: rows.filter((r) => r.deprecated).length,
+}
+---
+
+<Shell
+	title="Attribute registry"
+	description={`All ${counts.all} attributes in the OpenTelemetry semantic conventions, with stability, type and deprecation status.`}
+	wide
+>
+	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Attribute registry</h1>
+		<span class="text-[13.5px] text-faint">as of v{data.latest.version}</span>
+	</div>
+	<p class="mt-2 mb-0 text-muted max-w-[65ch]">
+		Every attribute the conventions define. Deprecated entries stay in the registry, so a name that
+		still resolves here may already have a successor &mdash; that is what the arrow means.
+	</p>
+
+	<div class="mt-6 flex flex-wrap items-center gap-3">
+		<input
+			id="q"
+			type="search"
+			placeholder="Filter by name, description or type…"
+			autocomplete="off"
+			spellcheck="false"
+			class="flex-1 min-w-[16rem] rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
+		/>
+		<div class="flex gap-1.5" role="group" aria-label="Filter by status">
+			{
+				(
+					[
+						["all", `All ${counts.all}`],
+						["stable", `Stable ${counts.stable}`],
+						["deprecated", `Deprecated ${counts.deprecated}`],
+					] as const
+				).map(([value, label]) => (
+					<button
+						type="button"
+						data-filter={value}
+						class="filter-btn rounded-md border border-rule px-2.5 py-1.5 text-[13px] text-muted hover:text-ink data-[on]:border-rule-strong data-[on]:text-ink data-[on]:font-medium"
+						data-on={value === "all" ? "" : undefined}
+					>
+						{label}
+					</button>
+				))
+			}
+		</div>
+	</div>
+
+	<p id="count" class="mt-3 mb-0 text-[13px] text-faint" aria-live="polite"></p>
+
+	<ul class="mt-2 m-0 list-none p-0" id="list">
+		{
+			rows.map((row) => (
+				<li
+					class="attr-row grid grid-cols-[minmax(0,22rem)_1fr] gap-x-5 items-baseline border-b border-rule py-2"
+					data-search={row.search}
+					data-stability={row.stability}
+					data-deprecated={row.deprecated ? "1" : "0"}
+				>
+					<a href={attributeHref(row.id)} class="font-mono text-[13.5px] font-medium no-underline hover:underline">
+						{row.id}
+					</a>
+					<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+						<Pill
+							label={row.deprecated ? "Deprecated" : (STABILITY_LABEL[row.stability] ?? row.stability)}
+							class={stabilityClass(row.stability, row.deprecated)}
+						/>
+						{row.renamedTo && (
+							<a href={attributeHref(row.renamedTo)} class="font-mono text-[12.5px] text-muted">
+								&rarr; {row.renamedTo}
+							</a>
+						)}
+						<span class="text-[13px] text-muted truncate">{row.brief}</span>
+					</div>
+				</li>
+			))
+		}
+	</ul>
+
+	<p id="empty" class="mt-8 text-muted" hidden>No attribute matches that filter.</p>
+</Shell>
+
+<script>
+	// Plain DOM filtering: ~950 rows is well within what the browser handles
+	// without a framework, and it keeps the page working as a static document.
+	const input = document.getElementById("q") as HTMLInputElement
+	const rows = Array.from(document.querySelectorAll<HTMLElement>(".attr-row"))
+	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".filter-btn"))
+	const count = document.getElementById("count") as HTMLElement
+	const empty = document.getElementById("empty") as HTMLElement
+
+	let status = "all"
+
+	const matchesStatus = (row: HTMLElement) => {
+		if (status === "all") return true
+		if (status === "deprecated") return row.dataset["deprecated"] === "1"
+		return row.dataset["stability"] === "stable" && row.dataset["deprecated"] !== "1"
+	}
+
+	function apply() {
+		const query = input.value.trim().toLowerCase()
+		let visible = 0
+		for (const row of rows) {
+			const show = matchesStatus(row) && (query === "" || (row.dataset["search"] ?? "").includes(query))
+			row.hidden = !show
+			if (show) visible++
+		}
+		count.textContent = `${visible} of ${rows.length} attributes`
+		empty.hidden = visible > 0
+	}
+
+	input.addEventListener("input", apply)
+	for (const button of buttons) {
+		button.addEventListener("click", () => {
+			status = button.dataset["filter"] ?? "all"
+			for (const other of buttons) other.toggleAttribute("data-on", other === button)
+			apply()
+		})
+	}
+
+	// A `?q=` in the URL makes a filtered view linkable.
+	const initial = new URLSearchParams(location.search).get("q")
+	if (initial) input.value = initial
+	apply()
+</script>

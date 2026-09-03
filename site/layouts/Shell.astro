@@ -1,0 +1,95 @@
+---
+import "../styles/global.css"
+import { SITE } from "../lib/site.ts"
+
+interface Props {
+	title: string
+	description: string
+	/** Rendered small and uppercase above the page heading. */
+	kicker?: string
+	wide?: boolean
+}
+
+const { title, description, wide = false } = Astro.props
+const path = Astro.url.pathname
+const nav = [
+	{ href: "/", label: "Changes" },
+	{ href: "/attributes", label: "Registry" },
+	{ href: "/diff", label: "Compare" },
+	{ href: "/about", label: "About" },
+]
+const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href))
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title === SITE.name ? title : `${title} · ${SITE.name}`}</title>
+		<meta name="description" content={description} />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:type" content="website" />
+		<link rel="canonical" href={new URL(path, Astro.site)} />
+		<link rel="alternate" type="application/rss+xml" title={`${SITE.name} — all changes`} href="/feed.xml" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+		/>
+	</head>
+	<body>
+		<header
+			class="sticky top-0 z-20 border-b border-rule bg-paper/85 backdrop-blur supports-[backdrop-filter]:bg-paper/70"
+		>
+			<div
+				class:list={["mx-auto flex items-center gap-6 px-5 py-3", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}
+			>
+				<a href="/" class="no-underline font-semibold tracking-tight shrink-0">
+					<span class="font-mono text-[13px] text-accent">◇</span>
+					{SITE.name}
+				</a>
+				<nav class="flex items-center gap-5 text-[13.5px] text-muted">
+					{
+						nav.map((item) => (
+							<a
+								href={item.href}
+								class:list={[
+									"no-underline hover:text-ink transition-colors",
+									isActive(item.href) && "text-ink font-medium",
+								]}
+							>
+								{item.label}
+							</a>
+						))
+					}
+				</nav>
+			</div>
+		</header>
+
+		<main class:list={["mx-auto px-5 py-10", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}>
+			<slot />
+		</main>
+
+		<footer class="mt-20 border-t border-rule">
+			<div
+				class:list={[
+					"mx-auto px-5 py-8 text-[13px] text-muted flex flex-wrap gap-x-6 gap-y-2",
+					wide ? "max-w-[86rem]" : "max-w-[62rem]",
+				]}
+			>
+				<span>
+					Data derived from the <a href="https://github.com/open-telemetry/semantic-conventions"
+						>OpenTelemetry semantic conventions</a
+					>. Not affiliated with the OpenTelemetry project or the CNCF.
+				</span>
+				<span class="ml-auto">
+					<a href="/llms.txt" class="font-mono">llms.txt</a> &middot;
+					<a href="/feed.xml">RSS</a> &middot; built by <a href={SITE.builderUrl}>{SITE.builder}</a>
+				</span>
+			</div>
+		</footer>
+	</body>
+</html>

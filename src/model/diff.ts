@@ -58,13 +58,18 @@ const isStable = (s: Stability) => s === "stable" || s === "release_candidate"
 const bySt = (stability: Stability, whenStable: Severity, otherwise: Severity): Severity =>
 	isStable(stability) ? whenStable : otherwise
 
+/**
+ * `alpha` and `experimental` are older spellings of the same tier as
+ * `development` -- the v1.31.0 model relabelled the whole registry in one go.
+ * Ranking them equal is what keeps that release from reading as 700 promotions.
+ */
 const STABILITY_RANK: Record<string, number> = {
-	alpha: 0,
-	experimental: 0,
+	alpha: 1,
+	experimental: 1,
 	development: 1,
 	release_candidate: 2,
 	stable: 3,
-	deprecated: -1,
+	deprecated: 0,
 }
 
 const depKey = (d: Deprecation | undefined) => (d ? `${d.reason}${d.renamedTo ? `->${d.renamedTo}` : ""}` : "")
@@ -148,14 +153,21 @@ function diffCommon(entity: EntityKind, before: Map<string, Common>, after: Map<
 		}
 
 		if (a.stability !== b.stability) {
-			const promoted = (STABILITY_RANK[a.stability] ?? 0) > (STABILITY_RANK[b.stability] ?? 0)
+			const rankBefore = STABILITY_RANK[b.stability] ?? 1
+			const rankAfter = STABILITY_RANK[a.stability] ?? 1
+			const relabelled = rankAfter === rankBefore
+			const promoted = rankAfter > rankBefore
 			changes.push({
 				kind: "stability-changed",
-				severity: promoted ? "notable" : bySt(b.stability, "breaking", "notable"),
+				severity: relabelled ? "informational" : promoted ? "notable" : bySt(b.stability, "breaking", "notable"),
 				entity,
 				id,
 				stability: a.stability,
-				detail: promoted ? `Promoted to ${a.stability}.` : `Stability lowered to ${a.stability}.`,
+				detail: relabelled
+					? `Stability label respelled from ${b.stability} to ${a.stability}.`
+					: promoted
+						? `Promoted to ${a.stability}.`
+						: `Stability lowered to ${a.stability}.`,
 				from: b.stability,
 				to: a.stability,
 			})

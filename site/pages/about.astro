@@ -1,0 +1,75 @@
+---
+import Shell from "../layouts/Shell.astro"
+import { catalog } from "../../src/model/catalog.ts"
+import { SITE } from "../lib/site.ts"
+
+const data = await catalog()
+---
+
+<Shell title="About" description={`How ${SITE.name} is built and what it does and does not cover.`}>
+	<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">About</h1>
+
+	<div class="mt-6 flex flex-col gap-5 max-w-[68ch] text-[15px]">
+		<p class="m-0">
+			The OpenTelemetry semantic conventions are published as a set of YAML files in which every
+			attribute carries a stability level and, when deprecated, the name of whatever replaced it.
+			That makes the registry diffable. This site diffs it, release by release, and turns the result
+			into pages you can link to.
+		</p>
+
+		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">How it is built</h2>
+		<p class="m-0">
+			Every tagged release from v{data.versions.at(-1)} onward is downloaded, normalized into a flat
+			snapshot of attributes, metrics and signals, and committed. The site builds from those
+			committed snapshots with no network access, so a page can always be reproduced from the
+			repository alone. A scheduled job checks for new releases and opens a pull request when it
+			finds one.
+		</p>
+		<p class="m-0">
+			The conventions are mid-migration between two model file formats. Both are read. This matters
+			more than it sounds: v1.44.0 moved <code class="font-mono text-[0.92em]">server.*</code>,
+			<code class="font-mono text-[0.92em]">client.*</code> and every
+			<code class="font-mono text-[0.92em]">hw.*</code> metric to the newer format, and a reader that
+			understood only the older one would report all of them as deleted from the registry.
+		</p>
+
+		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">What "breaking" means here</h2>
+		<p class="m-0">
+			A change is marked breaking when it removes, renames, or walks back something the project had
+			already declared stable or release&#8209;candidate &mdash; the tier where the conventions
+			promise not to do that. The same change to a development-stability definition is marked
+			notable instead, because churn there is expected and flagging it as breaking would drown the
+			signal. Upstream release notes use their own categories; both are shown, and they do not
+			always agree.
+		</p>
+
+		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">Limits</h2>
+		<ul class="m-0 pl-5 flex flex-col gap-2">
+			<li>
+				History starts at v{data.versions.at(-1)}. An attribute described as first seen there may be
+				much older.
+			</li>
+			<li>
+				Only the conventions registry is covered so far &mdash; not the OpenTelemetry specification
+				prose or the OTLP protocol definitions.
+			</li>
+			<li>
+				Definitions are reported as the registry states them. Where the registry is silent, so is
+				this site.
+			</li>
+		</ul>
+
+		<h2 class="m-0 mt-3 text-[1.05rem] font-semibold">For agents</h2>
+		<p class="m-0">
+			Every page has a machine-readable counterpart. See <a href="/llms.txt">llms.txt</a> for the map,
+			or fetch <a href="/api/attributes.json" class="font-mono text-[0.92em]">/api/attributes.json</a>
+			directly.
+		</p>
+
+		<p class="m-0 text-muted text-[13.5px] mt-3">
+			Independent project, built by <a href={SITE.builderUrl}>{SITE.builder}</a>. Not affiliated with
+			the OpenTelemetry project, the CNCF, or the Linux Foundation. Source data is licensed by the
+			OpenTelemetry Authors under Apache 2.0.
+		</p>
+	</div>
+</Shell>

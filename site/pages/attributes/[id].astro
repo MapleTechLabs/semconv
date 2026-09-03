@@ -1,0 +1,230 @@
+---
+import Pill from "../../components/Pill.astro"
+import Shell from "../../layouts/Shell.astro"
+import { catalog } from "../../../src/model/catalog.ts"
+import { SITE } from "../../lib/site.ts"
+import {
+	attributeHref,
+	formatDate,
+	inlineCode,
+	kindLabel,
+	STABILITY_LABEL,
+	severityClass,
+	stabilityClass,
+} from "../../lib/format.ts"
+
+export async function getStaticPaths() {
+	const data = await catalog()
+	return data.attributes.map((attribute) => ({
+		params: { id: attribute.id },
+		props: { attribute },
+	}))
+}
+
+const { attribute } = Astro.props
+const data = await catalog()
+
+const events = [...(data.lifecycle.get(attribute.id) ?? [])].reverse()
+const successor = attribute.deprecated?.renamedTo
+const predecessors = [...data.renames.entries()].filter(([, to]) => to === attribute.id).map(([from]) => from)
+
+/** Signal usage, grouped so "which spans carry this" is one glance. */
+const usage = new Map<string, { name: string; level: string }[]>()
+for (const use of attribute.usedBy) {
+	if (use.groupType === "attribute_group") continue
+	const bucket = usage.get(use.groupType) ?? []
+	bucket.push({ name: use.signalName ?? use.groupId, level: use.requirementLevel })
+	usage.set(use.groupType, bucket)
+}
+
+const sourceUrl = `${SITE.repo}/blob/v${data.latest.version}/${attribute.definedIn}`
+const registryDocs = `https://opentelemetry.io/docs/specs/semconv/registry/attributes/${attribute.namespace}/`
+
+const description = attribute.deprecated
+	? successor
+		? `${attribute.id} is deprecated in the OpenTelemetry semantic conventions and renamed to ${successor}.`
+		: `${attribute.id} is deprecated in the OpenTelemetry semantic conventions. ${attribute.brief}`
+	: `${attribute.id} - ${STABILITY_LABEL[attribute.stability] ?? attribute.stability} OpenTelemetry attribute. ${attribute.brief}`
+
+const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim().length > 0)
+---
+
+<Shell title={attribute.id} description={description.slice(0, 300)}>
+	<nav class="text-[13px] text-faint">
+		<a href="/attributes">Registry</a> /
+		<a href={`/attributes?q=${encodeURIComponent(`${attribute.namespace}.`)}`}>{attribute.namespace}</a>
+	</nav>
+
+	<h1 class="mt-2 mb-0 font-mono text-[1.55rem] font-semibold tracking-tight break-all">{attribute.id}</h1>
+
+	<div class="mt-3 flex flex-wrap items-center gap-2">
+		<Pill
+			label={attribute.deprecated ? "Deprecated" : (STABILITY_LABEL[attribute.stability] ?? attribute.stability)}
+			class={stabilityClass(attribute.stability, Boolean(attribute.deprecated))}
+		/>
+		<span class="font-mono text-[12.5px] text-muted">{attribute.type}</span>
+		<span class="text-[12.5px] text-faint">as of v{data.latest.version}</span>
+	</div>
+
+	{
+		attribute.deprecated && (
+			<aside class="mt-5 rounded-md border border-breaking/30 bg-breaking-bg px-4 py-3">
+				<p class="m-0 text-[13.5px] font-medium text-breaking">
+					{successor ? "Renamed" : attribute.deprecated.reason === "obsoleted" ? "Removed" : "Deprecated"}
+				</p>
+				<p class="mt-1 mb-0 text-[14.5px]">
+					{successor ? (
+						<>
+							Use{" "}
+							<a href={attributeHref(successor)} class="font-mono font-medium">
+								{successor}
+							</a>{" "}
+							instead.
+						</>
+					) : (
+						<span set:html={inlineCode(attribute.deprecated.note ?? "No replacement is defined.")} />
+					)}
+				</p>
+				<p class="mt-2 mb-0 text-[13px] text-muted">
+					Deprecated attributes stay in the registry, so instrumentation that still emits this name is
+					not broken &mdash; but consumers should read both spellings until the fleet catches up.
+				</p>
+			</aside>
+		)
+	}
+
+	{
+		predecessors.length > 0 && (
+			<aside class="mt-5 rounded-md border border-rule bg-surface px-4 py-3">
+				<p class="m-0 text-[13.5px] font-medium">Replaces</p>
+				<p class="mt-1 mb-0 text-[14px]">
+					{predecessors.map((id, i) => (
+						<>
+							{i > 0 && ", "}
+							<a href={attributeHref(id)} class="font-mono">
+								{id}
+							</a>
+						</>
+					))}
+					<span class="text-muted">
+						{" "}
+						&mdash; still emitted by older instrumentation, so read both.
+					</span>
+				</p>
+			</aside>
+		)
+	}
+
+	{
+		attribute.brief && (
+			<p class="mt-6 mb-0 text-[16px] leading-relaxed" set:html={inlineCode(attribute.brief)} />
+		)
+	}
+
+	{
+		attribute.note && (
+			<div class="mt-4 flex flex-col gap-3 text-[14.5px] text-muted max-w-[68ch]">
+				{paragraphs(attribute.note).map((p) => (
+					<p class="m-0" set:html={inlineCode(p)} />
+				))}
+			</div>
+		)
+	}
+
+	{
+		attribute.examples.length > 0 && (
+			<section class="mt-7">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Examples</h2>
+				<ul class="mt-2 m-0 flex flex-wrap gap-2 list-none p-0">
+					{attribute.examples.map((example) => (
+						<li class="font-mono text-[13px] rounded bg-rule/50 px-2 py-1">{example}</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	{
+		attribute.enumMembers && attribute.enumMembers.length > 0 && (
+			<section class="mt-8">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+					Values ({attribute.enumMembers.length})
+				</h2>
+				<ul class="mt-2 m-0 list-none p-0">
+					{attribute.enumMembers.map((member) => (
+						<li class="flex flex-wrap items-baseline gap-x-3 border-b border-rule py-1.5 last:border-0">
+							<code class="font-mono text-[13.5px] font-medium">{member.value}</code>
+							{member.deprecated && <Pill label="deprecated" class={stabilityClass("stable", true)} />}
+							{member.brief && (
+								<span class="text-[13px] text-muted" set:html={inlineCode(member.brief)} />
+							)}
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+
+	{
+		usage.size > 0 && (
+			<section class="mt-8">
+				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Used by</h2>
+				<div class="mt-2 flex flex-col gap-4">
+					{[...usage.entries()].map(([kind, entries]) => (
+						<div>
+							<p class="m-0 text-[13px] text-faint">
+								{kind}s ({entries.length})
+							</p>
+							<ul class="mt-1 m-0 flex flex-wrap gap-x-3 gap-y-1 list-none p-0">
+								{entries.slice(0, 40).map((entry) => (
+									<li class="font-mono text-[12.5px]">
+										{entry.name}
+										{entry.level === "required" && <span class="text-breaking"> *</span>}
+										{entry.level === "opt_in" && <span class="text-faint"> (opt-in)</span>}
+									</li>
+								))}
+								{entries.length > 40 && (
+									<li class="text-[12.5px] text-faint">and {entries.length - 40} more</li>
+								)}
+							</ul>
+						</div>
+					))}
+				</div>
+				<p class="mt-2 mb-0 text-[12.5px] text-faint">
+					<span class="text-breaking">*</span> required on that signal.
+				</p>
+			</section>
+		)
+	}
+
+	<section class="mt-9">
+		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">History</h2>
+		<ol class="mt-3 m-0 list-none p-0 border-l border-rule">
+			{
+				events.map((event) => (
+					<li class="relative pl-5 pb-4 last:pb-0">
+						<span class="absolute left-[-4px] top-[7px] h-[7px] w-[7px] rounded-full bg-rule-strong" />
+						<div class="flex flex-wrap items-baseline gap-x-2.5">
+							<a href={`/releases/${event.version}`} class="font-mono text-[13.5px] font-medium">
+								v{event.version}
+							</a>
+							<time class="text-[12.5px] text-faint" datetime={event.publishedAt}>
+								{formatDate(event.publishedAt)}
+							</time>
+							{event.severity && event.severity !== "informational" && (
+								<Pill label={kindLabel(event.kind)} class={severityClass(event.severity)} />
+							)}
+						</div>
+						<p class="mt-0.5 mb-0 text-[13.5px] text-muted" set:html={inlineCode(event.detail)} />
+					</li>
+				))
+			}
+		</ol>
+	</section>
+
+	<section class="mt-9 border-t border-rule pt-4 text-[13px] text-muted flex flex-wrap gap-x-5 gap-y-1">
+		<a href={sourceUrl}>Definition source</a>
+		<a href={registryDocs}>Registry docs</a>
+		<a href={`/api/attributes/${encodeURIComponent(attribute.id)}.json`} class="font-mono">JSON</a>
+	</section>
+</Shell>

@@ -1,0 +1,31 @@
+---
+import type { Change } from "../../src/model/diff.ts"
+import { attributeHref, inlineCode, kindLabel, severityClass } from "../lib/format.ts"
+import Pill from "./Pill.astro"
+
+interface Props {
+	changes: readonly Change[]
+	/** Attribute ids that exist as pages, so only real links are rendered. */
+	linkable: ReadonlySet<string>
+}
+const { changes, linkable } = Astro.props
+---
+
+<ul class="m-0 list-none p-0">
+	{
+		changes.map((change) => (
+			<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
+				<Pill label={kindLabel(change.kind)} class={severityClass(change.severity)} />
+				<span class="text-[11px] uppercase tracking-wide text-faint">{change.entity}</span>
+				{change.entity === "attribute" && linkable.has(change.id) ? (
+					<a href={attributeHref(change.id)} class="font-mono text-[13.5px] font-medium">
+						{change.id}
+					</a>
+				) : (
+					<span class="font-mono text-[13.5px] font-medium">{change.id}</span>
+				)}
+				<span class="text-muted text-[13.5px] basis-full sm:basis-auto" set:html={inlineCode(change.detail)} />
+			</li>
+		))
+	}
+</ul>
