@@ -11,6 +11,11 @@ Version 2.0:
   - https://github.com/open-telemetry/opentelemetry-specification
   - https://github.com/open-telemetry/opentelemetry-proto
 
+The Maple mark in `site/components/MapleMark.astro` is a trademark of Maple Tech
+Labs. It is included so the site can credit its author and is NOT covered by the
+Apache License granted over this repository's source; do not use it to identify
+anything other than Maple.
+
 This project is not affiliated with, endorsed by, or sponsored by the
 OpenTelemetry project, the Cloud Native Computing Foundation, or the Linux
 Foundation. "OpenTelemetry" is a trademark of the Linux Foundation.

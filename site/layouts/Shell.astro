@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css"
+import MapleMark from "../components/MapleMark.astro"
 import { SITE } from "../lib/site.ts"
 
 interface Props {
@@ -84,13 +85,22 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 				]}
 			>
 				<span>
-					Data derived from the <a href="https://github.com/open-telemetry/semantic-conventions"
-						>OpenTelemetry semantic conventions</a
-					>. Not affiliated with the OpenTelemetry project or the CNCF.
+					Data derived from the OpenTelemetry <a
+						href="https://github.com/open-telemetry/semantic-conventions">semantic conventions</a
+					>, <a href="https://github.com/open-telemetry/opentelemetry-specification">specification</a
+					> and <a href="https://github.com/open-telemetry/opentelemetry-proto">protocol</a>. Not
+					affiliated with the OpenTelemetry project or the CNCF.
 				</span>
-				<span class="ml-auto">
+				<span class="ml-auto flex items-center gap-x-1.5 shrink-0">
 					<a href="/llms.txt" class="font-mono">llms.txt</a> &middot;
-					<a href="/feed.xml">RSS</a> &middot; built by <a href={SITE.builderUrl}>{SITE.builder}</a>
+					<a href="/feed.xml">RSS</a> &middot; built by
+					<a
+						href={SITE.builderUrl}
+						class="inline-flex items-center gap-1.5 no-underline hover:text-ink transition-colors"
+					>
+						<MapleMark class="h-[13px] w-[13px] text-[#E86F00]" />
+						<span class="underline decoration-rule-strong underline-offset-[3px]">{SITE.builder}</span>
+					</a>
 				</span>
 			</div>
 		</footer>
