@@ -51,6 +51,16 @@ read. This is not a detail: v1.44.0 moved `server.*`, `client.*`, `source.*`, `d
 every `hw.*` metric to the newer format, and a format-1-only reader reports all of them as deleted
 from the registry.
 
+## For agents
+
+`/llms.txt` maps the machine-readable surface. `/api/*.json` is generated at build time and served
+straight off the CDN. `/mcp` is a public, read-only MCP server (streamable HTTP, no auth, no
+session state) whose tools read those same asset files through the Worker's `ASSETS` binding — so
+the MCP answers and the pages cannot drift apart.
+
+The tool that earns its keep is `check_attribute_names`: give it the attribute keys a codebase
+emits and it reports which are deprecated, renamed, or absent from the registry.
+
 ## Severity
 
 A change is `breaking` when it removes, renames or walks back a definition already marked `stable`

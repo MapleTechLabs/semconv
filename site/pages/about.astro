@@ -65,6 +65,14 @@ const data = await catalog()
 			or fetch <a href="/api/attributes.json" class="font-mono text-[0.92em]">/api/attributes.json</a>
 			directly.
 		</p>
+		<p class="m-0">
+			There is also a public, read-only MCP server at
+			<code class="font-mono text-[0.92em]">/mcp</code> &mdash; no auth, no session state. Its most
+			useful tool is <code class="font-mono text-[0.92em]">check_attribute_names</code>: hand it the
+			attribute keys a codebase emits and it reports which are deprecated, renamed, or not in the
+			registry at all. Worth reaching for before asserting that a key is current, since the registry
+			moves monthly and a model's training data usually does not.
+		</p>
 
 		<p class="m-0 text-muted text-[13.5px] mt-3">
 			Independent project, built by <a href={SITE.builderUrl}>{SITE.builder}</a>. Not affiliated with

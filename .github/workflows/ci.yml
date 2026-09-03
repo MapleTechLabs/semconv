@@ -15,5 +15,7 @@ jobs:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun run test
+      # Build first: the MCP worker tests exercise the real ASSETS path by
+      # reading dist/, and skip themselves when it is absent.
       - run: bun run build
+      - run: bun run test

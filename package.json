@@ -9,7 +9,9 @@
 		"dev": "astro dev --port 4321",
 		"build": "astro build",
 		"preview": "astro preview --port 4321",
-		"sync": "astro sync"
+		"sync": "astro sync",
+		"deploy": "bun run build && wrangler deploy",
+		"worker:dev": "bun run build && wrangler dev"
 	},
 	"dependencies": {
 		"@effect/platform": "^0.97.1",
@@ -21,7 +23,9 @@
 		"yaml": "^2.8.1"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260903.1",
 		"@types/bun": "^1.3.11",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"wrangler": "^4.128.0"
 	}
 }

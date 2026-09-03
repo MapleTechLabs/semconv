@@ -1,11 +1,13 @@
 {
-	// Static assets only - the site is fully prerendered, and every JSON
-	// endpoint is a file on disk. There is no Worker script.
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "semconv-watch",
+	"main": "src/mcp/worker.ts",
 	"compatibility_date": "2026-09-01",
+	// The Worker exists only for /mcp; every other path is served straight from
+	// the prerendered site, and the MCP tools read those same asset files.
 	"assets": {
 		"directory": "./dist",
+		"binding": "ASSETS",
 		"not_found_handling": "404-page"
 	}
 }

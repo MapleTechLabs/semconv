@@ -38,6 +38,13 @@ Fetch ${origin}/api/diff/FROM...TO.json for any ordered pair of tracked versions
 ${origin}/api/diff/${oldest}...${latest}.json. Each change carries \`kind\`, \`severity\`,
 \`entity\`, \`id\`, \`detail\`, and \`renamedTo\` where a successor is known.
 
+## MCP
+
+${origin}/mcp is a public, read-only MCP server (streamable HTTP, no auth, no session state).
+Tools: list_versions, check_attribute_names, get_attribute, search_attributes, diff_versions.
+check_attribute_names takes the attribute keys a codebase emits and reports which are deprecated,
+renamed, or absent from the registry - use it instead of answering from training data.
+
 ## Endpoints
 
 - ${origin}/api/versions.json — tracked releases with publication dates and change counts
