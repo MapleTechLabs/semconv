@@ -2,7 +2,7 @@
 import ChangeList from "../../../components/ChangeList.astro"
 import Pill from "../../../components/Pill.astro"
 import Shell from "../../../layouts/Shell.astro"
-import { catalog, SOURCES, SOURCE_LABEL } from "../../../../src/model/catalog.ts"
+import { catalog, SOURCES, SOURCE_LABEL, UNRELEASED } from "../../../../src/model/catalog.ts"
 import type { Severity } from "../../../../src/model/change.ts"
 import type { SourceId } from "../../../../src/model/types.ts"
 import { formatDate, SEVERITY_LABEL, severityClass, versionLabel } from "../../../lib/format.ts"
@@ -19,7 +19,14 @@ const data = await catalog()
 const catalogue = data.source(source)
 
 const release = catalogue.release(diff.to)
-const linkable = new Set(data.attributes.map((a) => a.id))
+/**
+ * What upstream calls this snapshot. A tagged source's release tag is `v1.44.0`,
+ * but an untagged one is dated — `v2026-09-01` names no ref, and every deep link
+ * built from it 404s. The commit SHA the record carries is the tree the snapshot
+ * was actually read from.
+ */
+const upstreamTag = release?.tag ?? `v${diff.to}`
+const linkable = data.linkableAttributes
 const index = catalogue.diffs.findIndex((d) => d.to === diff.to)
 const newer = index > 0 ? catalogue.diffs[index - 1] : undefined
 const older = catalogue.diffs[index + 1]
@@ -32,6 +39,10 @@ const BREAKING_BLURB: Record<SourceId, string> = {
 	semconv: "Changes to definitions the project had already marked stable or release candidate.",
 	spec: "Requirements added to, removed from, or restrengthened in a document marked Stable.",
 	proto: "Changes to a released wire definition. Development packages are ranked notable instead.",
+	// Never rendered in practice: the GenAI registry is development throughout, so
+	// nothing in it can rank breaking. Kept so the promise is written down rather
+	// than implied by an absent key.
+	genai: "Changes to definitions already marked stable or release candidate.",
 }
 
 /**
@@ -41,25 +52,38 @@ const BREAKING_BLURB: Record<SourceId, string> = {
  * because they enumerate the same renames our own diff already lists, and the
  * trailing issue references are noise at this size.
  */
-const upstreamBullets = (release?.body ?? "")
-	.split("\n")
-	.filter((line) => line.startsWith("- "))
-	.map((line) =>
-		line
-			.slice(2)
-			.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-			.replace(/\s*\(#\d+\)\s*$/, "")
-			.replace(/`/g, "")
-			.replace(/\s+/g, " ")
-			.trim(),
-	)
+const clean = (line: string) =>
+	line
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+		.replace(/\s*\(#\d+\)\s*$/, "")
+		.replace(/`/g, "")
+		.replace(/\s+/g, " ")
+		.trim()
+
+const body = release?.body ?? ""
+
+/**
+ * An untagged source has no release notes to lift from: its record carries the
+ * commit subject instead, which is the one sentence its author wrote about the
+ * change and worth the same box.
+ */
+const untagged = UNRELEASED[source] === true
+
+const upstreamBullets = (
+	untagged
+		? [clean(body)]
+		: body
+				.split("\n")
+				.filter((line) => line.startsWith("- "))
+				.map((line) => clean(line.slice(2)))
+)
 	.filter((line) => line.length > 0)
 	.slice(0, 10)
 ---
 
 <Shell
-	title={`${SOURCE_LABEL[source]} v${diff.to}`}
-	description={`What changed in OpenTelemetry ${SOURCE_LABEL[source].toLowerCase()} v${diff.to}: ${diff.counts.breaking} breaking, ${diff.counts.notable} notable and ${diff.counts.informational} editorial changes since v${diff.from}.`}
+	title={`${SOURCE_LABEL[source]} ${versionLabel(diff.to)}`}
+	description={`What changed in OpenTelemetry ${SOURCE_LABEL[source].toLowerCase()} ${versionLabel(diff.to)}: ${diff.counts.breaking} breaking, ${diff.counts.notable} notable and ${diff.counts.informational} editorial changes since ${versionLabel(diff.from)}.`}
 >
 	<nav class="text-[13px] text-faint"><a href="/">Changes</a></nav>
 
@@ -93,7 +117,7 @@ const upstreamBullets = (release?.body ?? "")
 		upstreamBullets.length > 0 && (
 			<section class="mt-7 rounded-md border border-rule bg-surface px-4 py-3">
 				<h2 class="m-0 text-[11px] uppercase tracking-[0.12em] text-faint font-semibold">
-					From the upstream release notes
+					{untagged ? "From the upstream commit" : "From the upstream release notes"}
 				</h2>
 				<ul class="mt-2 m-0 pl-4 flex flex-col gap-1.5 text-[13.5px] text-muted">
 					{upstreamBullets.map((line) => (
@@ -102,7 +126,7 @@ const upstreamBullets = (release?.body ?? "")
 				</ul>
 				{release && (
 					<p class="mt-3 mb-0 text-[13px]">
-						<a href={release.url}>Read the full release notes</a>
+						<a href={release.url}>{untagged ? "Read the commit" : "Read the full release notes"}</a>
 					</p>
 				)}
 			</section>
@@ -120,7 +144,7 @@ const upstreamBullets = (release?.body ?? "")
 					<p class="mt-1 mb-0 text-[13.5px] text-muted max-w-[68ch]">{BREAKING_BLURB[source]}</p>
 				)}
 				<div class="mt-2">
-					<ChangeList changes={section.changes} linkable={linkable} source={source} tag={`v${diff.to}`} />
+					<ChangeList changes={section.changes} linkable={linkable} source={source} tag={upstreamTag} />
 				</div>
 			</section>
 		))

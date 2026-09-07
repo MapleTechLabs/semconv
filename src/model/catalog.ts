@@ -100,6 +100,13 @@ export interface Catalog {
 	 * what tells a page that a dead-looking attribute is alive elsewhere.
 	 */
 	readonly genaiLive: ReadonlyMap<string, Attribute>
+	/**
+	 * Attribute ids that have a page: the current semantic conventions plus the
+	 * current GenAI registry. A change list linking anything else points at a
+	 * route that was never built — which is easy to do now that the GenAI history
+	 * reaches back to attributes the registry has since dropped.
+	 */
+	readonly linkableAttributes: ReadonlySet<string>
 	readonly namespaces: readonly { readonly name: string; readonly count: number }[]
 }
 
@@ -220,6 +227,11 @@ async function build(): Promise<Catalog> {
 		if (!attribute.deprecated) genaiLive.set(attribute.id, attribute)
 	}
 
+	const linkableAttributes = new Set([
+		...semconv.latest.attributes.map((a) => a.id),
+		...genai.latest.attributes.map((a) => a.id),
+	])
+
 	const renames = new Map<string, string>()
 	for (const attribute of semconv.latest.attributes) {
 		if (attribute.deprecated?.renamedTo) renames.set(attribute.id, attribute.deprecated.renamedTo)
@@ -243,6 +255,7 @@ async function build(): Promise<Catalog> {
 		lifecycle,
 		renames,
 		genaiLive,
+		linkableAttributes,
 		namespaces: [...namespaceCounts.entries()]
 			.map(([name, count]) => ({ name, count }))
 			.sort((a, b) => a.name.localeCompare(b.name)),

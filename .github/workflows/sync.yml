@@ -36,7 +36,9 @@ jobs:
             echo "any=false" >> "$GITHUB_OUTPUT"
           else
             echo "any=true" >> "$GITHUB_OUTPUT"
-            echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed 's#data/##; s#/#  v#; s#\.json\.gz##' | paste -sd', ' -)" >> "$GITHUB_OUTPUT"
+            # `v` only where there is a version to prefix: an untagged source is
+            # dated, and `v2026-09-01` names a tag that does not exist.
+            echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed -E 's#^data/##; s#\.json\.gz$##; s#/([0-9]+\.[0-9]+)#  v\1#; s#/#  #' | paste -sd', ' -)" >> "$GITHUB_OUTPUT"
           fi
 
       # Build first: the MCP worker tests read dist/. The tests assert against

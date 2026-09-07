@@ -250,7 +250,19 @@ export async function normalizeSemconv(
 		const refs = resolveRefs(group.id)
 		const attributeIds = [...new Set(refs.map((r) => text(r.ref)).filter(Boolean))].sort()
 
-		for (const ref of refs) {
+		/**
+		 * A group can reference the same attribute twice: once inherited through
+		 * `ref_group` / `extends`, once in its own list to override the inherited
+		 * requirement level. `resolveRefs` returns inherited refs first, so the
+		 * last occurrence is the effective one — and collapsing to it is what
+		 * makes the override visible. Keeping both wrote `gen_ai.provider.name` as
+		 * required *and* conditionally required on the same metric, and left a
+		 * relaxation upstream announced in a commit subject invisible to the diff.
+		 */
+		const effective = new Map<string, Raw>()
+		for (const ref of refs) effective.set(text(ref.ref), ref)
+
+		for (const ref of effective.values()) {
 			const target = attributes.get(text(ref.ref))
 			if (!target) continue
 			target.usedBy.push({

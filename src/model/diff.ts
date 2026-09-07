@@ -155,6 +155,102 @@ function diffCommon(entity: EntityKind, before: Map<string, Common>, after: Map<
 	return changes
 }
 
+/**
+ * Which signals reference an attribute, and how strongly. `usedBy` is the only
+ * place the model records that `gen_ai.provider.name` is `required` on a span
+ * and `conditionally_required` on a metric, and both halves of that move —
+ * relaxing an existing reference, or adding one to a signal that did not have
+ * it — are changes to what an instrumentation has to emit.
+ *
+ * Diffed per attribute rather than per usage, and reported as one change
+ * naming the first signal: an attribute referenced by thirty groups whose level
+ * was relaxed once should be one line in the feed, not thirty.
+ */
+const usageLevels = (a: Attribute) => new Map(a.usedBy.map((u) => [u.signalName ?? u.groupId, u.requirementLevel] as const))
+
+/** `conditionally_required` -> `conditionally required`, for prose. */
+const levelLabel = (level: string) => level.replace(/_/g, " ")
+
+const REQUIREMENT_RANK: Record<string, number> = {
+	opt_in: 0,
+	recommended: 1,
+	conditionally_required: 2,
+	required: 3,
+}
+
+const demanded = (level: string) => (REQUIREMENT_RANK[level] ?? 1) >= 2
+
+/** `a and b` / `a, b and 3 others`, so one change can name what it covers. */
+const listSignals = (signals: readonly string[]) => {
+	const [first, second] = signals
+	if (signals.length === 1) return `\`${first}\``
+	if (signals.length === 2) return `\`${first}\` and \`${second}\``
+	return `\`${first}\`, \`${second}\` and ${signals.length - 2} other${signals.length === 3 ? "" : "s"}`
+}
+
+function diffUsage(before: Attribute, after: Attribute): Change[] {
+	const from = usageLevels(before)
+	const to = usageLevels(after)
+	const changes: Change[] = []
+
+	const moved: { signal: string; from: string; to: string }[] = []
+	const added: string[] = []
+	for (const [signal, level] of to) {
+		const was = from.get(signal)
+		if (was === undefined) added.push(signal)
+		else if (was !== level) moved.push({ signal, from: was, to: level })
+	}
+	const removed = [...from.keys()].filter((signal) => !to.has(signal))
+
+	if (moved.length > 0) {
+		const first = moved[0] as { signal: string; from: string; to: string }
+		const strengthened = moved.some(({ from: f, to: t }) => (REQUIREMENT_RANK[t] ?? 1) > (REQUIREMENT_RANK[f] ?? 1))
+		changes.push({
+			kind: "requirement-level-changed",
+			/**
+			 * A stable attribute newly demanded by a signal is work for every
+			 * instrumentation of it, so it ranks with the lifecycle events. It is
+			 * not `breaking`: nothing already emitted stops being valid, which is
+			 * the line the rest of this differ draws.
+			 */
+			severity: strengthened && isStable(after.stability) ? "notable" : "informational",
+			entity: "attribute",
+			id: after.id,
+			stability: after.stability,
+			detail: `On ${listSignals(moved.map((m) => m.signal))}: ${levelLabel(first.from)} to ${levelLabel(first.to)}.`,
+			from: first.from,
+			to: first.to,
+		})
+	}
+
+	if (added.length > 0) {
+		const obligation = added.some((signal) => demanded(to.get(signal) as string))
+		changes.push({
+			kind: "usage-changed",
+			severity: obligation && isStable(after.stability) ? "notable" : "informational",
+			entity: "attribute",
+			id: after.id,
+			stability: after.stability,
+			detail: `Now referenced by ${listSignals(added)} (${levelLabel(to.get(added[0] as string) as string)}).`,
+		})
+	}
+
+	if (removed.length > 0) {
+		changes.push({
+			kind: "usage-changed",
+			// Dropping a reference asks nothing new of anyone; the attribute itself
+			// is untouched, and a removal of the *definition* is reported elsewhere.
+			severity: "informational",
+			entity: "attribute",
+			id: after.id,
+			stability: after.stability,
+			detail: `No longer referenced by ${listSignals(removed)}.`,
+		})
+	}
+
+	return changes
+}
+
 const enumKey = (a: Attribute) =>
 	(a.enumMembers ?? [])
 		.map((m) => `${m.id}=${m.value}`)
@@ -202,6 +298,7 @@ export function diffSemconv(before: SemconvSnapshot, after: SemconvSnapshot): Se
 				detail: `Enum members changed (${b.enumMembers?.length ?? 0} to ${a.enumMembers?.length ?? 0}).`,
 			})
 		}
+		changes.push(...diffUsage(b, a))
 		if (a.examples.join(" ") !== b.examples.join(" ")) {
 			changes.push({
 				kind: "examples-changed",

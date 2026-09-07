@@ -75,6 +75,9 @@ const defaults = Object.fromEntries(
 	const summary = document.getElementById("summary") as HTMLElement
 	const out = document.getElementById("out") as HTMLElement
 
+	/** Mirrors `versionLabel`: a dated, untagged source has no `v` to prefix. */
+	const label = (version: string) => (version.includes("-") ? version : `v${version}`)
+
 	const versions = JSON.parse(form.dataset["versions"] ?? "{}") as Record<string, string[]>
 	const defaults = JSON.parse(form.dataset["defaults"] ?? "{}") as Record<string, { from: string; to: string }>
 
@@ -85,7 +88,7 @@ const defaults = Object.fromEntries(
 	function fillVersions(preferred?: { from: string; to: string }) {
 		const list = versions[sourceSelect.value] ?? []
 		for (const select of [fromSelect, toSelect]) {
-			select.innerHTML = list.map((v) => `<option value="${v}">v${v}</option>`).join("")
+			select.innerHTML = list.map((v) => `<option value="${v}">${label(v)}</option>`).join("")
 		}
 		const fallback = defaults[sourceSelect.value] ?? { from: list[0] ?? "", to: list.at(-1) ?? "" }
 		fromSelect.value = preferred?.from && list.includes(preferred.from) ? preferred.from : fallback.from
@@ -132,7 +135,7 @@ const defaults = Object.fromEntries(
 		// naming rather than a 404.
 		const list = versions[source] ?? []
 		if (list.indexOf(from) > list.indexOf(to)) {
-			summary.textContent = `v${from} is newer than v${to} — swap them to see what changed.`
+			summary.textContent = `${label(from)} is newer than ${label(to)} — swap them to see what changed.`
 			out.innerHTML = ""
 			return
 		}
@@ -144,7 +147,7 @@ const defaults = Object.fromEntries(
 		if (!diff) {
 			const response = await fetch(`/api/diff/${key}.json`)
 			if (!response.ok) {
-				summary.textContent = `No diff available for v${from} to v${to}.`
+				summary.textContent = `No diff available for ${label(from)} to ${label(to)}.`
 				out.innerHTML = ""
 				return
 			}

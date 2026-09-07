@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
 import { gunzipSync, gzipSync } from "node:zlib"
 import type { DataIndex, ReleaseRecord, SemconvSnapshot, Snapshot, SourceId } from "../model/types.ts"
@@ -94,13 +94,33 @@ export async function readIndex(): Promise<DataIndex> {
  * Merges new release records into the index. `generatedAt` deliberately tracks
  * the newest release rather than wall-clock time - a re-run that finds nothing
  * new must not produce a diff.
+ *
+ * `replace` drops a source's existing records first, for the one case where
+ * merging is wrong: a forced re-walk of an untagged source decides afresh which
+ * commits produce a distinct model, so a commit that no longer does must leave
+ * the index rather than linger as a release with no snapshot behind it.
  */
-export async function writeIndex(releases: readonly ReleaseRecord[]): Promise<void> {
+export async function writeIndex(releases: readonly ReleaseRecord[], replace: readonly SourceId[] = []): Promise<void> {
+	const dropped = new Set(replace)
 	const merged = new Map<string, ReleaseRecord>()
-	for (const r of [...(await readIndex()).releases, ...releases]) merged.set(`${r.source}@${r.tag}`, r)
+	for (const r of [...(await readIndex()).releases, ...releases]) {
+		if (dropped.has(r.source) && !releases.includes(r)) continue
+		merged.set(`${r.source}@${r.tag}`, r)
+	}
 	const sorted = [...merged.values()].sort(
 		(a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.source.localeCompare(b.source),
 	)
 	const index: DataIndex = { generatedAt: sorted[0]?.publishedAt ?? new Date(0).toISOString(), releases: sorted }
 	await writeFileEnsuringDir(INDEX_PATH, `${JSON.stringify(index, null, "\t")}\n`)
+}
+
+/**
+ * Drops every snapshot of one source. Only `ingest --force` on an untagged
+ * source calls this: that walk re-derives both the set of snapshots and their
+ * version numbers from upstream, so leaving the old files in place could strand
+ * a snapshot whose commit no longer produces a distinct model — and the catalog
+ * reads whatever is on disk, not whatever the index lists.
+ */
+export async function clearSnapshots(source: SourceId): Promise<void> {
+	await rm(`${DATA_ROOT}${source}`, { recursive: true, force: true })
 }

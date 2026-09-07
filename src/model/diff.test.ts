@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
-import { readSemconv } from "../ingest/store.ts"
+import { listSnapshots, readSemconv, readSnapshot } from "../ingest/store.ts"
 import { diffSemconv } from "./diff.ts"
+import type { SemconvSnapshot } from "./types.ts"
 
 /**
  * These run against the committed snapshots rather than hand-written fixtures.
@@ -108,6 +109,81 @@ describe("diff invariants", () => {
 			const diff = diffSemconv(before, after)
 			const stableRemovals = diff.changes.filter((c) => c.kind === "removed" && c.stability === "stable")
 			expect(stableRemovals.map((c) => c.id), `${diff.from} -> ${diff.to}`).toEqual([])
+		}
+	})
+})
+
+/**
+ * The GenAI registry is walked commit by commit, which is a different failure
+ * mode from a tagged source: a normalizer that misses a field, or a gate that
+ * keeps the wrong commits, shows up as a run of release pages saying nothing.
+ */
+const genaiVersions = (await listSnapshots("genai")).reverse()
+const genai = await Promise.all(genaiVersions.map((version) => readSnapshot<SemconvSnapshot>("genai", version)))
+
+describe("the GenAI commit history", () => {
+	test("starts at the commit that made it a repository of its own", () => {
+		const oldest = genai[0] as SemconvSnapshot
+		expect(oldest.tag).toBe("ebe3d1f")
+		// One commit earlier the filtered history still carries the aws.* tree the
+		// split dropped; crossing it fabricates 52 removals.
+		expect(oldest.attributes.some((a) => a.namespace === "aws")).toBe(false)
+	})
+
+	test("every kept commit changed something", () => {
+		for (let i = 1; i < genai.length; i++) {
+			const diff = diffSemconv(genai[i - 1] as SemconvSnapshot, genai[i] as SemconvSnapshot)
+			expect(diff.changes.length, `${diff.from} -> ${diff.to} is an empty release page`).toBeGreaterThan(0)
+		}
+	})
+
+	test("same-day commits get their own version rather than overwriting", () => {
+		const sameDay = genaiVersions.filter((v) => v.includes("."))
+		expect(sameDay.length).toBeGreaterThan(0)
+		expect(new Set(genai.map((s) => s.tag)).size).toBe(genai.length)
+		// Suffixed or not, the walk stays in commit order. Not strictly increasing:
+		// commits pushed together share a committer timestamp, which is why the
+		// ingest resumes from a commit rather than from a date.
+		for (let i = 1; i < genai.length; i++) {
+			expect((genai[i] as SemconvSnapshot).publishedAt >= (genai[i - 1] as SemconvSnapshot).publishedAt).toBe(true)
+		}
+	})
+
+	test("nothing ranks breaking, because the registry is development throughout", () => {
+		for (let i = 1; i < genai.length; i++) {
+			const diff = diffSemconv(genai[i - 1] as SemconvSnapshot, genai[i] as SemconvSnapshot)
+			expect(diff.counts.breaking, `${diff.from} -> ${diff.to}`).toBe(0)
+		}
+	})
+})
+
+describe("requirement levels on signals", () => {
+	/**
+	 * Upstream: "Relax gen_ai.provider.name on gen_ai.client.operation.duration to
+	 * Conditionally Required" — a commit whose entire content lives in `usedBy`.
+	 * Before the differ read it, this landed as a release page with nothing on it.
+	 */
+	test("catches a level relaxed on one signal", async () => {
+		const before = await readSnapshot<SemconvSnapshot>("genai", "2026-05-26")
+		const after = await readSnapshot<SemconvSnapshot>("genai", "2026-06-04")
+		const change = diffSemconv(before, after).changes.find(
+			(c) => c.id === "gen_ai.provider.name" && c.kind === "requirement-level-changed",
+		)
+		expect(change?.detail).toContain("gen_ai.client.operation.duration")
+		expect(change?.from).toBe("required")
+		expect(change?.to).toBe("conditionally_required")
+	})
+
+	/**
+	 * A group can reference an attribute twice — inherited through `ref_group`,
+	 * then again in its own list to override the level. Keeping both wrote the
+	 * attribute as required *and* conditionally required on the same signal, and
+	 * hid every override from the diff.
+	 */
+	test("a group references an attribute at exactly one level", () => {
+		for (const attribute of v144.attributes) {
+			const groups = attribute.usedBy.map((u) => u.groupId)
+			expect(new Set(groups).size, `${attribute.id} is referenced twice by one group`).toBe(groups.length)
 		}
 	})
 })
