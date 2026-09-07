@@ -1,13 +1,37 @@
 {
-	"generatedAt": "2026-09-03T01:31:41Z",
+	"generatedAt": "2026-09-01T00:13:46Z",
 	"releases": [
 		{
 			"source": "genai",
-			"tag": "fee465d",
-			"version": "2026-09-03",
-			"publishedAt": "2026-09-03T01:31:41Z",
-			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commits/main",
-			"body": ""
+			"tag": "5ca9052",
+			"version": "2026-09-01",
+			"publishedAt": "2026-09-01T00:13:46Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/5ca9052bc796ef1e497200b1d558fd87a201f335",
+			"body": "gen-ai: deprecate per-message finish reason (#363)"
+		},
+		{
+			"source": "genai",
+			"tag": "5f5ae69",
+			"version": "2026-08-27",
+			"publishedAt": "2026-08-27T01:47:30Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/5f5ae69e52464c56eea4389fb793c2690caaea78",
+			"body": "Remove cache token usage attributes from internal agent spans (#469)"
+		},
+		{
+			"source": "genai",
+			"tag": "8a3767d",
+			"version": "2026-08-20",
+			"publishedAt": "2026-08-20T03:23:01Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8a3767d6c5d09bc0917722720973c0c44182d960",
+			"body": "Add span/event attributes for usage breakdown per modality / cache / phases (#440)"
+		},
+		{
+			"source": "genai",
+			"tag": "8d3e4a0",
+			"version": "2026-08-10",
+			"publishedAt": "2026-08-10T23:51:20Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8d3e4a0f3c34a46f6edb9c71e8666e02e6bf3958",
+			"body": "Clarify workflow span criteria and add reference scenarios for langchain and openai agents (#354)"
 		},
 		{
 			"source": "spec",
@@ -18,12 +42,84 @@
 			"body": "### Resource\r\n\r\n- Add Entity support to the Resource SDK specification.\r\n  ([#5201](https://github.com/open-telemetry/opentelemetry-specification/pull/5201))\r\n\r\n### Entities\r\n\r\n- Add Entity specification.\r\n  ([#5201](https://github.com/open-telemetry/opentelemetry-specification/pull/5201))\r\n\r\n### OpenTelemetry Protocol\r\n\r\n- Add max request / response size options to list of OTLP exporter configuration options.\r\n  ([#5235](https://github.com/open-telemetry/opentelemetry-specification/pull/5235))\r\n\r\n### Compatibility\r\n\r\n- Clarify the interaction between Prometheus content negotiation and translation\r\n  strategy.\r\n  ([#5134](https://github.com/open-telemetry/opentelemetry-specification/pull/5134))\r\n- Stabilize sections of Prometheus Metrics Exporter.\r\n  - Stabilize Target section.\r\n    ([#5221](https://github.com/open-telemetry/opentelemetry-specification/pull/5221))\r\n\r\n### OTEPs\r\n\r\n- Thread Context: Sharing Thread-Level Information with the OpenTelemetry eBPF Profiler.\r\n  ([#4947](https://github.com/open-telemetry/opentelemetry-specification/pull/4947))\r\n\r\n## New Contributors\r\n* @scottgerring made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/4947"
 		},
 		{
+			"source": "genai",
+			"tag": "8c1b98a",
+			"version": "2026-08-07",
+			"publishedAt": "2026-08-07T01:49:41Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8c1b98a376e91d422726ccf33bef051fd9ce4b25",
+			"body": "Allow conversation ID on workflow spans (#410)"
+		},
+		{
+			"source": "genai",
+			"tag": "04702bc",
+			"version": "2026-08-06",
+			"publishedAt": "2026-08-06T22:38:29Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/04702bce2223048826235e717427afb646bd9de2",
+			"body": "Warn that gen_ai.tool.description and gen_ai.tool.definitions may contain sensitive information (#431)"
+		},
+		{
+			"source": "genai",
+			"tag": "4a39b6e",
+			"version": "2026-08-05.2",
+			"publishedAt": "2026-08-05T14:12:06Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/4a39b6ef1363fab57bc40e18c82abb32cc89ebcd",
+			"body": "Keep upstream doc links pinned to the version in `model/manifest.yaml` (#435)"
+		},
+		{
+			"source": "genai",
+			"tag": "11658bb",
+			"version": "2026-08-05",
+			"publishedAt": "2026-08-05T03:25:00Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/11658bba3eb02448618ddf1fc52789a3fc2937cc",
+			"body": "Rename gen_ai.workflow.duration to gen_ai.invoke_workflow.duration (#341)"
+		},
+		{
 			"source": "semconv",
 			"tag": "v1.44.0",
 			"version": "1.44.0",
 			"publishedAt": "2026-08-04T20:00:58Z",
 			"url": "https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.44.0",
 			"body": "### 🛑 Breaking changes 🛑\r\n\r\n- `browser`: Reworked the `browser.web_vital` event - moved `name`/`value`/`delta`/`id` from the event body to `browser.web_vital.*` attributes, and added new attributes per current instrumentation. ([#3401](https://github.com/open-telemetry/semantic-conventions/issues/3401))\r\n- `k8s`: Rename `k8s.node.memory.paging.faults`, `k8s.pod.memory.paging.faults` and `container.memory.paging.faults` metrics by dropping the `memory` namespace segment.\r\n  ([#3805](https://github.com/open-telemetry/semantic-conventions/issues/3805))\r\n  Renamed metrics:\r\n  - k8s.pod.memory.paging.faults -> k8s.pod.paging.faults\r\n  - k8s.node.memory.paging.faults -> k8s.node.paging.faults\r\n  - container.memory.paging.faults -> container.paging.faults\r\n- `k8s`: Change {container, k8s.pod, k8s.node}.memory.usage to updowncounter ([#3889](https://github.com/open-telemetry/semantic-conventions/issues/3889))\r\n\r\n### 💡 Enhancements 💡\r\n\r\n- `cloud`: Add Scaleway Cloud to cloud.provider and scaleway_cloud_compute to cloud.platform ([#2773](https://github.com/open-telemetry/semantic-conventions/issues/2773))\r\n- `db`: Clarify `db.query.parameter.<key>` semantics around sensitive data handling.\r\n ([#3831](https://github.com/open-telemetry/semantic-conventions/issues/3831))\r\n- `faas`: The general FaaS attributes are now defined on the FaaS spans that use them, so each span documents its full attribute set. ([#3905](https://github.com/open-telemetry/semantic-conventions/issues/3905))\r\n- `host`: Update the recommendations to use full path to commands when collecting `host.id` attribute value.\r\n ([#3896](https://github.com/open-telemetry/semantic-conventions/issues/3896))\r\n- `hw`: Per-component `hw.errors` and `hw.status` metrics now document the full set of component-specific attributes (e.g. `hw.model`, `hw.vendor`) alongside the generic ones.\r\n ([#3808](https://github.com/open-telemetry/semantic-conventions/issues/3808))\r\n- `k8s`: Add `k8s.node.filesystem.inode.count` and `k8s.node.filesystem.inode.free` metrics to track Kubernetes node root filesystem inode capacity and usage. ([#3858](https://github.com/open-telemetry/semantic-conventions/issues/3858))\r\n- `k8s`: Promote a selection of container and K8s memory metrics to release_candidate ([#3882](https://github.com/open-telemetry/semantic-conventions/issues/3882))\r\n  The following metrics are being promoted to release_candidate:\r\n  - container.memory.usage\r\n  - container.memory.available\r\n  - container.memory.rss\r\n  - container.memory.working_set\r\n  - k8s.pod.memory.usage\r\n  - k8s.pod.memory.available\r\n  - k8s.pod.memory.rss\r\n  - k8s.pod.memory.working_set\r\n  - k8s.node.memory.usage\r\n  - k8s.node.memory.available\r\n  - k8s.node.memory.rss\r\n  - k8s.node.memory.working_set\r\n\r\n- `k8s`: Clarify how `cpu.usage` is calculated for K8s and container entities. ([#2418](https://github.com/open-telemetry/semantic-conventions/issues/2418))\r\n  CPU usage is measured in cores/CPUs and is calculated based on the formula:\r\n  `usageCores = (cpuTimeEnd - cpuTimeStart) / elapsedSeconds`\r\n  This PR improves the description making it aligned with the corresponding\r\n  system and process metrics.\r\n\r\n- `messaging`: Add `messaging.kafka.cluster.id` attribute identifying the Kafka cluster a client is connected to, and reference it from Kafka spans. ([#32](https://github.com/open-telemetry/semantic-conventions/issues/32))\r\n- `messaging`: Define a span per messaging operation type (create, send, receive, process, settle) and refine them for each messaging system. ([#3904](https://github.com/open-telemetry/semantic-conventions/issues/3904))\r\n- `network`: Promote `network.interface.name` attribute to `release_candidate` ([#3953](https://github.com/open-telemetry/semantic-conventions/issues/3953))\r\n- `otel`: Clarify that `otel.sdk.processor.span.processed` and `otel.sdk.processor.log.processed` are recorded when the processor passes items to the exporter, not when an item is accepted into a queue or when the export operation completes, and that the export outcome does not affect these metrics.\r\n ([#3902](https://github.com/open-telemetry/semantic-conventions/issues/3902))\r\n- `process`: Add process.disk.operations, process.memory.utilization, and process.signals_pending metrics ([#3937](https://github.com/open-telemetry/semantic-conventions/issues/3937))\r\n  Process namespace has been made release candidate. During migration of process metrics to release\r\n  candidate in hostmetrics receiver, it was discovered that the following process metrics were not\r\n  present in process semantic conventions: process.disk.operations, process.memory.utilization,\r\n  and process.signals_pending.\r\n\r\n- `server, client, source, destination`: The descriptions of the `server`, `client`, `source`, and `destination` attribute groups are now documented in [General attributes](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/attributes.md) instead of the attribute registry pages.\r\n ([#3935](https://github.com/open-telemetry/semantic-conventions/issues/3935))\r\n- `system`: Add `system.process.limit` metric representing the maximum number of concurrent tasks/threads allowed by the operating system. ([#3859](https://github.com/open-telemetry/semantic-conventions/issues/3859))\r\n\r\n### 🧰 Bug fixes 🧰\r\n\r\n- `otel`: Clarify that `already_shutdown` on `otel.sdk.processor.span.processed` and `otel.sdk.processor.log.processed` is a value-only requirement for the `error.type` attribute: whether and when a processor drops records because it has already been shut down is governed by the SDK specification, not by this metric.\r\n ([#3957](https://github.com/open-telemetry/semantic-conventions/issues/3957))\r\n- `rpc`: Fix wording in `server.address` note to say \"reverse DNS lookup\" instead of \"reverse proxy lookup\".\r\n ([#3871](https://github.com/open-telemetry/semantic-conventions/issues/3871))\r\n- `rpc`: Remove tracing-only `rpc.method_original` guidance from the shared `rpc.method` definition.\r\n ([#3872](https://github.com/open-telemetry/semantic-conventions/issues/3872))\r\n\r\n## New Contributors\r\n* @Jaegeonyoon made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3843\r\n* @shashank-reddy-nr made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3819\r\n* @lachmatt made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3896\r\n* @jaredDlewis made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3851\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/semantic-conventions/compare/v1.43.0...v1.44.0"
+		},
+		{
+			"source": "genai",
+			"tag": "683c745",
+			"version": "2026-08-04",
+			"publishedAt": "2026-08-04T15:43:04Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/683c74506292a4c0ad1c772982e7d51e6128ba5d",
+			"body": "MCP server status: don't set to errors for client errors (#404)"
+		},
+		{
+			"source": "genai",
+			"tag": "8484f22",
+			"version": "2026-08-01",
+			"publishedAt": "2026-08-01T19:15:02Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8484f22ff8069267f37cb1be54bcebbf1972b682",
+			"body": "weaver 0.25.0: remove now unnecessary workarounds (#400)"
+		},
+		{
+			"source": "genai",
+			"tag": "683d28d",
+			"version": "2026-07-31",
+			"publishedAt": "2026-07-31T20:35:26Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/683d28da9fc8e5fc87a7d64200ac88799b9202c2",
+			"body": "gen-ai: add fetch_response operation and span (#353)"
+		},
+		{
+			"source": "genai",
+			"tag": "3cfb9e6",
+			"version": "2026-07-28",
+			"publishedAt": "2026-07-28T16:51:32Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/3cfb9e6e2344a337f9378e2bfdfd8ed9e1f20ca2",
+			"body": "#344 Make retrieval document id and score optional (#396)"
+		},
+		{
+			"source": "genai",
+			"tag": "712c94f",
+			"version": "2026-07-23",
+			"publishedAt": "2026-07-23T17:05:41Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/712c94fe6f6a165ee0b93d9687286357eb335c7e",
+			"body": "Add new sem conv request attribute `gen_ai.request.previous_response.id` (#372)"
 		},
 		{
 			"source": "proto",
@@ -34,12 +130,28 @@
 			"body": "## What's Changed\r\n### Added\r\n- docs: add request size limitation for HTTP body and gRPC messages. https://github.com/open-telemetry/opentelemetry-proto/pull/782\r\n- docs: add response size limitation for HTTP body and gRPC messages. https://github.com/open-telemetry/opentelemetry-proto/pull/781, https://github.com/open-telemetry/opentelemetry-proto/pull/800, https://github.com/open-telemetry/opentelemetry-proto/pull/801, https://github.com/open-telemetry/opentelemetry-proto/pull/802\r\n- processcontext: add ProcessContext message described in [OTEP 4719](https://github.com/open-telemetry/opentelemetry-specification/blob/main/oteps/profiles/4719-process-ctx.md). https://github.com/open-telemetry/opentelemetry-proto/pull/783\r\n\r\n### Fixed\r\n- docs: clarify that Retry-After header value can be an HTTP-date. https://github.com/open-telemetry/opentelemetry-proto/pull/806\r\n\r\n\r\n## New Contributors\r\n* @liwa-datev made their first contribution in https://github.com/open-telemetry/opentelemetry-proto/pull/758\r\n* @ivoanjo made their first contribution in https://github.com/open-telemetry/opentelemetry-proto/pull/783\r\n* @vascoccorreia made their first contribution in https://github.com/open-telemetry/opentelemetry-proto/pull/824\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/opentelemetry-proto/compare/v1.10.0...v1.11.0"
 		},
 		{
+			"source": "genai",
+			"tag": "33b7f9d",
+			"version": "2026-07-16",
+			"publishedAt": "2026-07-16T20:51:57Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/33b7f9da9ade6162d4a5c16247d0bc6ad5f8b469",
+			"body": "Replace gen_ai.agent.steps with per-invocation call-count metrics (#336)"
+		},
+		{
 			"source": "spec",
 			"tag": "v1.59.0",
 			"version": "1.59.0",
 			"publishedAt": "2026-07-10T14:21:51Z",
 			"url": "https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.59.0",
 			"body": "### Context\r\n\r\n- Clarify that environment variable propagation operational guidance is\r\n  non-normative and should be documented by language implementations.\r\n  ([#5165](https://github.com/open-telemetry/opentelemetry-specification/pull/5165))\r\n- Clean up implementation guidelines for environment variable propagation\r\n  carriers.\r\n  ([#5166](https://github.com/open-telemetry/opentelemetry-specification/pull/5166))\r\n- Remove caching behavior suggestions for environment variable propagation\r\n  carrier implementations.\r\n  ([#5179](https://github.com/open-telemetry/opentelemetry-specification/pull/5179))\r\n- Mark \"Environment Variables as Context Propagation Carriers\" as Release\r\n  Candidate.\r\n  ([#5142](https://github.com/open-telemetry/opentelemetry-specification/pull/5142))\r\n\r\n### Traces\r\n\r\n- Amend the description of Composite/Composable samplers.\r\n  ([#5161](https://github.com/open-telemetry/opentelemetry-specification/pull/5161))\r\n\r\n### Logs\r\n\r\n- Add ETW (Event Tracing for Windows) example mapping to the logs data\r\n  model appendix, including the ETW level to `SeverityNumber` mapping.\r\n  ([#5159](https://github.com/open-telemetry/opentelemetry-specification/pull/5159))\r\n\r\n### Profiles\r\n\r\n- Add Profiles data model (data-model.md).\r\n  ([#4965](https://github.com/open-telemetry/opentelemetry-specification/pull/4965))\r\n\r\n### Supplementary Guidelines\r\n\r\n- Add non-normative supplementary guidelines for SDK self-observability.\r\n  ([#5135](https://github.com/open-telemetry/opentelemetry-specification/pull/5135))\r\n\r\n### OTEPs\r\n\r\n- Add OTEP proposing a central OpenTelemetry benchmarks repository.\r\n  ([#5118](https://github.com/open-telemetry/opentelemetry-specification/pull/5118))\r\n- Introduce Policies into the specification.\r\n  ([#4738](https://github.com/open-telemetry/opentelemetry-specification/pull/4738))\r\n\r\n## New Contributors\r\n* @swashtek made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5159\r\n* @oindrilakha12-ui made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5194\r\n"
+		},
+		{
+			"source": "genai",
+			"tag": "953dd22",
+			"version": "2026-07-08",
+			"publishedAt": "2026-07-08T20:29:36Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/953dd22e3cecd3a397d742c349d2435d59c8b771",
+			"body": "[chore] Add signal requirement level to yaml and jinja templates (#340)"
 		},
 		{
 			"source": "semconv",
@@ -50,12 +162,84 @@
 			"body": "### 🚩 Deprecations 🚩\r\n\r\n- `docs`: Add a generic signal requirement level document and deprecate the metric-specific one.\r\n ([#3810](https://github.com/open-telemetry/semantic-conventions/issues/3810), [#3278](https://github.com/open-telemetry/semantic-conventions/issues/3278))\r\n\r\n### 💡 Enhancements 💡\r\n\r\n- `azure`: Add `azure.resource_group.name` attribute for the name of the Azure resource group the resource belongs to and document that `cloud.account.id` maps to the Azure subscription ID. ([#3697](https://github.com/open-telemetry/semantic-conventions/issues/3697), [#3708](https://github.com/open-telemetry/semantic-conventions/issues/3708))\r\n- `cicd`: Promote CI/CD span, metric, log, attribute, and entity conventions to `release_candidate` ([#3674](https://github.com/open-telemetry/semantic-conventions/issues/3674), [#3675](https://github.com/open-telemetry/semantic-conventions/issues/3675), [#3677](https://github.com/open-telemetry/semantic-conventions/issues/3677))\r\n- `db`: Clarify `db.operation.batch.size` semantics for database batch operations, including multi-operand operations, parameterized operation batch APIs, and empty batches.\r\n ([#3811](https://github.com/open-telemetry/semantic-conventions/issues/3811))\r\n- `db`: Promote Oracle Database connection attributes to release candidate so the RC `db.oracledb.client` span does not reference lower-stability attributes. ([#3753](https://github.com/open-telemetry/semantic-conventions/issues/3753))\r\n- `disk, network, system`: Promote disk.io.direction, network.io.direction, and system.paging.fault.type attributes to RC ([#3796](https://github.com/open-telemetry/semantic-conventions/issues/3796))\r\n  The `network.io.direction` brief was updated based on review feedback to clarify that\r\n  it describes traffic at the observing interface boundary and is not intended to represent\r\n  logical connection or network flow direction.\r\n  \r\n- `otel`: Clarify that the `otel.span.sampling_result` attribute of `otel.sdk.span.live` can only take values `RECORD_ONLY` and `RECORD_AND_SAMPLE`, not `DROP`, since the metric does not count non-recording spans.\r\n ([#3782](https://github.com/open-telemetry/semantic-conventions/issues/3782))\r\n- `process`: Promote process metrics and entity to release_candidate ([#3041](https://github.com/open-telemetry/semantic-conventions/issues/3041))\r\n- `rpc`: Clarify how to populate `server.address` and `server.port` for Dubbo consumers using service discovery. ([#3408](https://github.com/open-telemetry/semantic-conventions/issues/3408))\r\n- `schema`: Add registry manifest. ([#3824](https://github.com/open-telemetry/semantic-conventions/issues/3824))\r\n- `telemetry`: Add `kotlin` as a value for the `telemetry.sdk.language` attribute. ([#3552](https://github.com/open-telemetry/semantic-conventions/issues/3552))\r\n- `vcs`: Promote VCS attribute, entity, and metric conventions to `release_candidate` ([#3676](https://github.com/open-telemetry/semantic-conventions/issues/3676))\r\n\r\n### 🧰 Bug fixes 🧰\r\n\r\n- `db`: Align Oracle Database `db.query.text` guidance with other SQL database conventions. ([#3790](https://github.com/open-telemetry/semantic-conventions/issues/3790))\r\n  Parameterized query text is now recommended to be collected by default, while\r\n  query parameter values remain opt-in.\r\n\r\n## New Contributors\r\n* @kathiehuang made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3722\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/semantic-conventions/compare/v1.42.0...v1.43.0"
 		},
 		{
+			"source": "genai",
+			"tag": "791c341",
+			"version": "2026-06-25.2",
+			"publishedAt": "2026-06-25T19:20:11Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/791c341968d4d14cdc4d26f5c59fe690a7fcba5b",
+			"body": "Add json-schema annotation for complex attributes, render boilerplate note in templates (#330)"
+		},
+		{
+			"source": "genai",
+			"tag": "4812692",
+			"version": "2026-06-25",
+			"publishedAt": "2026-06-25T19:19:06Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/48126929c29206df00303d37d761e9c3e8e8c9af",
+			"body": "Align attributes between invoke_agent.internal and execute_tool spans and metrics (#322)"
+		},
+		{
+			"source": "genai",
+			"tag": "e853ef1",
+			"version": "2026-06-24",
+			"publishedAt": "2026-06-24T20:33:54Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/e853ef127cb37f310b5b8de81fb648f149243746",
+			"body": "Clarify that gen_ai.invoke_agent.duration is about in-proc / internal span (#321)"
+		},
+		{
+			"source": "genai",
+			"tag": "0183a25",
+			"version": "2026-06-23",
+			"publishedAt": "2026-06-23T14:43:58Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/0183a25b3d6970d993fd3e77b0471b8d518efe83",
+			"body": "Add prompt versioning and variable support to GenAI attributes (#179)"
+		},
+		{
 			"source": "spec",
 			"tag": "v1.58.0",
 			"version": "1.58.0",
 			"publishedAt": "2026-06-22T16:02:03Z",
 			"url": "https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.58.0",
 			"body": "### Context\r\n\r\n- Clarify that environment variable propagation carriers normalize requested\r\n  keys, carrier keys, and returned keys.\r\n  ([#5102](https://github.com/open-telemetry/opentelemetry-specification/pull/5102))\r\n- Specify that environment variable propagation carriers only read and return\r\n  normalized environment variable names.\r\n  ([#5144](https://github.com/open-telemetry/opentelemetry-specification/pull/5144))\r\n- Specify that an empty environment variable propagation name is non-normalized\r\n  and normalizes to `_`.\r\n  ([#5163](https://github.com/open-telemetry/opentelemetry-specification/pull/5163))\r\n\r\n### Profiles\r\n\r\n- Remove duplicate information from and extend Profiles documentation (README.md, pprof.md).\r\n  ([#4932](https://github.com/open-telemetry/opentelemetry-specification/pull/4932))\r\n\r\n### Entities\r\n\r\n- Add specification for communicating entity information as structured log events.\r\n  ([#4836](https://github.com/open-telemetry/opentelemetry-specification/pull/4836))\r\n\r\n### Common\r\n\r\n- Add an in-development [SDK self-observability](specification/self-observability.md)\r\n  section, referenced from the Tracing, Metrics, and Logs SDK specs.\r\n  ([#5087](https://github.com/open-telemetry/opentelemetry-specification/pull/5087))\r\n- Clarify non-OTLP representation guidance for nested `AnyValue` values in\r\n  arrays and maps.\r\n  ([#5053](https://github.com/open-telemetry/opentelemetry-specification/pull/5053))\r\n- Add in-development guidance recommending a JSON object as the string\r\n  representation for an attribute in non-OTLP protocols.\r\n  ([#5028](https://github.com/open-telemetry/opentelemetry-specification/pull/5028))\r\n- Add in-development guidance recommending a JSON object as the string\r\n  representation for an attribute collection in non-OTLP protocols.\r\n  ([#5110](https://github.com/open-telemetry/opentelemetry-specification/pull/5110))\r\n\r\n### Compatibility\r\n\r\n- Deprecate OpenCensus compatibility requirements in the specification.\r\n  ([#5138](https://github.com/open-telemetry/opentelemetry-specification/pull/5138))\r\n- Stabilize sections of Prometheus Metrics Exporter.\r\n  - Clarify resource attributes configuration.\r\n    ([#5084](https://github.com/open-telemetry/opentelemetry-specification/pull/5084))\r\n  - Stabilize the conversion of OTLP Summaries into Prometheus Summaries.\r\n    ([#5107](https://github.com/open-telemetry/opentelemetry-specification/pull/5107))\r\n  - Stabilize client libs section.\r\n    ([#5106](https://github.com/open-telemetry/opentelemetry-specification/pull/5106))\r\n  - Stabilize Prometheus Metrics Exporter default aggregation configuration.\r\n    ([#5113](https://github.com/open-telemetry/opentelemetry-specification/pull/5113))\r\n- Stabilize sections of Prometheus and OpenMetrics Compatibility.\r\n  - Stabilize OpenTelemetry Histogram to Prometheus Histogram transformation.\r\n    ([#5091](https://github.com/open-telemetry/opentelemetry-specification/pull/5091))\r\n- Add optional OpenTelemetry Histogram to Prometheus Native Histogram with Custom Buckets transformation.\r\n  ([#5091](https://github.com/open-telemetry/opentelemetry-specification/pull/5091))\r\n\r\n### SDK Configuration\r\n\r\n- Add link to declarative config IdGenerator type\r\n  ([#5133](https://github.com/open-telemetry/opentelemetry-specification/pull/5133))\r\n\r\n### OTEPs\r\n\r\n- Context-scoped Attributes.\r\n  ([#4931](https://github.com/open-telemetry/opentelemetry-specification/pull/4931))\r\n\r\n## New Contributors\r\n* @itssaharsh made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5112\r\n* @christos68k made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/4932\r\n* @Krishnachaitanyakc made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5138\r\n"
+		},
+		{
+			"source": "genai",
+			"tag": "6967795",
+			"version": "2026-06-19",
+			"publishedAt": "2026-06-19T21:34:17Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/6967795c5ceeb77357ca4f3dfc9a512496fb9a11",
+			"body": "Fix tool_call_response example field name (result -> response) (#323)"
+		},
+		{
+			"source": "genai",
+			"tag": "65884d0",
+			"version": "2026-06-18.2",
+			"publishedAt": "2026-06-18T22:21:04Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/65884d0cb148d19214c1d865e24a0c3784432de8",
+			"body": "Add gen_ai.invoke_agent.duration and gen_ai.execute_tool.duration metrics (#201)"
+		},
+		{
+			"source": "genai",
+			"tag": "93de98a",
+			"version": "2026-06-18",
+			"publishedAt": "2026-06-18T05:04:12Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/93de98a5b1298ee6708c76ca87cb389861689732",
+			"body": "Add `gen_ai.request.reasoning.level` attribute (#258)"
+		},
+		{
+			"source": "genai",
+			"tag": "c032e24",
+			"version": "2026-06-17.2",
+			"publishedAt": "2026-06-17T18:24:50Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/c032e2404edb6fce3f7929b93d50f1e6ab665875",
+			"body": "semconv for compaction (#162)"
+		},
+		{
+			"source": "genai",
+			"tag": "126e72f",
+			"version": "2026-06-17",
+			"publishedAt": "2026-06-17T17:56:56Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/126e72f670b2c4e7aef0af4bcbc735f791154665",
+			"body": "Remove gen_ai.provider.name from internal agent spans (#289)"
 		},
 		{
 			"source": "semconv",
@@ -66,6 +250,54 @@
 			"body": "## 📣 Highlights 📣\r\n\r\n* **Generative AI Migration:** All `gen_ai.*` attributes, metrics, events, and spans have been deprecated and moved to the dedicated [OpenTelemetry GenAI Semantic Conventions Repository](https://github.com/open-telemetry/semantic-conventions-genai). ([#3696](https://github.com/open-telemetry/semantic-conventions/issues/3696))\r\n* **Graduations to Stable:** A core selection of Kubernetes and container registry resource attributes have officially graduated to `stable` status. ([#3382](https://github.com/open-telemetry/semantic-conventions/issues/3382))\r\n* **Promotions to Release Candidate:** Several conventions advanced to `release_candidate`, including `cpu.mode` ([#3694](https://github.com/open-telemetry/semantic-conventions/issues/3694)), process attributes ([#3041](https://github.com/open-telemetry/semantic-conventions/issues/3041)), and core CPU time metrics (`k8s.pod.cpu.time`, `k8s.node.cpu.time`, and `container.cpu.time`) ([#3001](https://github.com/open-telemetry/semantic-conventions/issues/3001)).\r\n\r\n## Changelog\r\n\r\n### 🛑 Breaking changes 🛑\r\n\r\n- `gen-ai`: Move Generative AI semantic conventions to a dedicated repository. ([#3696](https://github.com/open-telemetry/semantic-conventions/issues/3696))\r\n  All `gen_ai.*` attributes, metrics, events, and spans previously defined under\r\n  `model/gen-ai/`, `model/openai/`, and `model/mcp/` (and documented under\r\n  `docs/gen-ai/`) are deprecated in this repository and have moved to the\r\n  [OpenTelemetry GenAI semantic conventions repository](https://github.com/open-telemetry/semantic-conventions-genai).\r\n  \r\n  Instrumentations following the new repository's conventions should refer to\r\n  it for the corresponding `schema_url` to use.\r\n  \r\n- `http`: Change `network.peer.address` attribute requirement level from Recommended to Opt-In on the `http.client.open_connections` and `http.client.connection.duration` metrics. ([#3279](https://github.com/open-telemetry/semantic-conventions/issues/3279))\r\n  `network.peer.address` is typically high-cardinality (one time series per remote IP)\r\n  and causes unbounded growth of metric streams over the lifetime of the process when\r\n  exported with cumulative temporality (always the case for `http.client.open_connections`\r\n  since it is an UpDownCounter, and possible for `http.client.connection.duration` when\r\n  the histogram is configured for cumulative). Operators that need this attribute can\r\n  still opt-in.\r\n  \r\n- `v8js`: Rename `v8js.memory.heap.limit` to `v8js.memory.heap.space.size` (per-space pre-allocated size from `v8.getHeapSpaceStatistics()`),\r\nand add a new `v8js.memory.heap.limit` UpDownCounter representing the absolute heap size limit from `v8.getHeapStatistics().heap_size_limit`\r\n(controlled by `--max-old-space-size` or V8 defaults).\r\n ([#3476](https://github.com/open-telemetry/semantic-conventions/issues/3476))\r\n\r\n### 🚀 New components 🚀\r\n\r\n- `browser`: Introduce `browser.document.url.full` attribute and `browser.document` entity to capture the absolute URL of the current browser document. ([#174](https://github.com/open-telemetry/semantic-conventions/issues/174))\r\n  The `browser.document` entity is introduced as a separate entity from `browser` because\r\n  the browser runtime attributes (brands, platform, language) are immutable for the SDK\r\n  lifetime, while the document URL changes on every navigation. The new attribute follows\r\n  RFC3986 and has `Recommended` requirement level at `Development` stability.\r\n  \r\n### 💡 Enhancements 💡\r\n\r\n- `app`: Defines a basic crash of an end-user facing app that requires a minimal amount of information. ([#3448](https://github.com/open-telemetry/semantic-conventions/issues/3448))\r\n- `cpu`: Promote `cpu.mode` attribute and its enum members to `release_candidate` ([#3694](https://github.com/open-telemetry/semantic-conventions/issues/3694))\r\n- `docs`: Add guidance for defining events in semantic conventions. ([#1855](https://github.com/open-telemetry/semantic-conventions/issues/1855))\r\n- `docs`: Don't allow signal definition to reference attributes with lower stability than the signal itself (unless they are opt-in).\r\n ([#3752](https://github.com/open-telemetry/semantic-conventions/issues/3752))\r\n- `gcp`: Add GCE instance labels as resource attributes. ([#2617](https://github.com/open-telemetry/semantic-conventions/issues/2617))\r\n- `k8s`: Promote `k8s.pod.cpu.time`, `k8s.node.cpu.time` and `container.cpu.time` metrics to `release_candidate` ([#3001](https://github.com/open-telemetry/semantic-conventions/issues/3001))\r\n- `k8s`: Add metric `k8s.container.ephemeral_storage.usage` to track ephemeral storage usage by containers. ([#3681](https://github.com/open-telemetry/semantic-conventions/issues/3681))\r\n  This metric includes an attribute `k8s.container.ephemeral_storage.fs_type` to distinguish between `rootfs` and `logs` usage.\r\n  \r\n- `k8s`: Promote a selection of k8s and container registry attributes to `stable` ([#3382](https://github.com/open-telemetry/semantic-conventions/issues/3382))\r\n- `otel`: Clarify semantics of SDK exporter metrics when the exporter performs retries: an export operation is considered finished only after the final attempt has concluded, items are counted exactly once per operation, and `otel.sdk.exporter.operation.duration` records one observation per operation covering all attempts and backoff. Also drop a spurious `error.type` note from the `*.inflight` metrics, which do not carry an `error.type` attribute.\r\n ([#3770](https://github.com/open-telemetry/semantic-conventions/issues/3770))\r\n- `otel`: Reserve `already_shutdown` as a value for `error.type` on the `otel.sdk.processor.span.processed` and `otel.sdk.processor.log.processed` metrics, used when a processor drops items because it has already been shut down.\r\n ([#3710](https://github.com/open-telemetry/semantic-conventions/issues/3710))\r\n- `process`: Promote process attributes to release_candidate ([#3041](https://github.com/open-telemetry/semantic-conventions/issues/3041))\r\n- `profile`: Extend the list of known frame types with a value for LuaJIT ([#3707](https://github.com/open-telemetry/semantic-conventions/issues/3707))\r\n- `service`: Mark `service.criticality` attribute as alpha. ([#2986](https://github.com/open-telemetry/semantic-conventions/issues/2986))\r\n  The `service.criticality` attribute and its allowed values (`critical`, `high`, `medium`, `low`)\r\n  are now in alpha status.\r\n  \r\n- `system, file`: Add support for filesystem lock counts ([#3611](https://github.com/open-telemetry/semantic-conventions/issues/3611))\r\n- `v8js`: Update `v8js.gc.duration` metric to match bucket boundaries used by Node.js instrumentation. ([#3761](https://github.com/open-telemetry/semantic-conventions/issues/3761))\r\n\r\n### 🧰 Bug fixes 🧰\r\n\r\n- `browser`: remove the condition to include `user_agent.original` attribute in browser resource ([#3738](https://github.com/open-telemetry/semantic-conventions/issues/3738))\r\n- `cicd`: Consistent spelling of \"CI/CD\" throughout the CICD registry. ([#3634](https://github.com/open-telemetry/semantic-conventions/issues/3634))\r\n- `container`: Remove kernel from cpu.mode enum and clarify container cpu states ([#3700](https://github.com/open-telemetry/semantic-conventions/issues/3700))\r\n- `k8s`: Exclude `k8s.container.cpu.limit_utilization` and `k8s.container.cpu.request_utilization` metrics from code generation ([#3711](https://github.com/open-telemetry/semantic-conventions/issues/3711), [#3705](https://github.com/open-telemetry/semantic-conventions/issues/3705))\r\n\r\n\r\n## New Contributors\r\n* @mquentin made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3633\r\n* @Hronom made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3481\r\n* @Dipanshusinghh made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3739\r\n* @mcollina made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3761\r\n* @david-luna made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3738\r\n* @Ayushi-12 made their first contribution in https://github.com/open-telemetry/semantic-conventions/pull/3781\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/semantic-conventions/compare/v1.41.0...v1.42.0"
 		},
 		{
+			"source": "genai",
+			"tag": "cc93175",
+			"version": "2026-06-10",
+			"publishedAt": "2026-06-10T00:13:36Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/cc93175d71451b50cda11505a28af529a7b72244",
+			"body": "Limit gen_ai.agent.id to stable / static identifiers (#242)"
+		},
+		{
+			"source": "genai",
+			"tag": "4ab2021",
+			"version": "2026-06-08",
+			"publishedAt": "2026-06-08T18:35:48Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/4ab2021c86018a2610ad8cc039fa3db2c4a4066a",
+			"body": "Clarify that billed token counts should be reported for Cohere usage (#211)"
+		},
+		{
+			"source": "genai",
+			"tag": "60c5e5b",
+			"version": "2026-06-05",
+			"publishedAt": "2026-06-05T18:12:28Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/60c5e5b50607f9c9516ae02e8b04409a031a1db0",
+			"body": "Generalize gen_ai.provider.name description (#212)"
+		},
+		{
+			"source": "genai",
+			"tag": "c8e9288",
+			"version": "2026-06-04.2",
+			"publishedAt": "2026-06-04T14:40:49Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/c8e928825be59b601d9f6336bba1a5c51f5f721c",
+			"body": "Change `gen_ai.request.top_k` type to int and split out `gen_ai.retrieval.top_k` (#217)"
+		},
+		{
+			"source": "genai",
+			"tag": "c47252b",
+			"version": "2026-06-04",
+			"publishedAt": "2026-06-04T14:21:57Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/c47252b8048d4286095ebdad7a68b8c57eb822e9",
+			"body": "Relax gen_ai.provider.name on gen_ai.client.operation.duration to Conditionally Required (#214)"
+		},
+		{
+			"source": "genai",
+			"tag": "8554a35",
+			"version": "2026-05-26",
+			"publishedAt": "2026-05-26T19:21:25Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8554a35da2375c9afe9cdbfd626afd2f3582f620",
+			"body": "chore: add moonshot_ai, minimax, z_ai to well-known values (#99)"
+		},
+		{
 			"source": "spec",
 			"tag": "v1.57.0",
 			"version": "1.57.0",
@@ -74,12 +306,92 @@
 			"body": "### Metrics\r\n\r\n- Add in-development `Bind` API to synchronous instruments.\r\n  ([#5050](https://github.com/open-telemetry/opentelemetry-specification/pull/5050))\r\n- Clarify that View-provided metric stream `name` is not subject to instrument\r\n  name syntax validation.\r\n  ([#5094](https://github.com/open-telemetry/opentelemetry-specification/pull/5094))\r\n\r\n### Common\r\n\r\n- Define the Core packages term.\r\n  ([#5046](https://github.com/open-telemetry/opentelemetry-specification/pull/5046))\r\n- Rework contributing guide to reflect current process.\r\n  ([#5072](https://github.com/open-telemetry/opentelemetry-specification/pull/5072))\r\n\r\n### Compatibility\r\n\r\n- Stabilize sections of Prometheus and OpenMetrics Compatibility.\r\n  - Stabilize translation of labels prefixed with `otel_scope_` to OTLP Instrumentation Scope.\r\n    ([#5004](https://github.com/open-telemetry/opentelemetry-specification/pull/5004))\r\n  - Stabilize OpenTelemetry Gauge and Sum to Prometheus transformations.\r\n    ([#5034](https://github.com/open-telemetry/opentelemetry-specification/pull/5034))\r\n  - Stabilize OpenTelemetry Instrumentation Scope to Prometheus labels transformation.\r\n    ([#5052](https://github.com/open-telemetry/opentelemetry-specification/pull/5052))\r\n- Stabilize sections of Prometheus Metrics Exporter.\r\n  - Stabilize temporality.\r\n    ([#5024](https://github.com/open-telemetry/opentelemetry-specification/pull/5024))\r\n  - Stabilize version and format.\r\n    ([#5083](https://github.com/open-telemetry/opentelemetry-specification/pull/5083))\r\n  - Stabilize port configuration.\r\n    ([#5026](https://github.com/open-telemetry/opentelemetry-specification/pull/5026))\r\n  - Stabilize `scope_info_enabled` configuration.\r\n    ([#5056](https://github.com/open-telemetry/opentelemetry-specification/pull/5056))\r\n- Change Prometheus Metric Exporter config property recommended names\r\n  (`without_scope_info` -> `scope_info_enabled`, `without_target_info` -> `target_info_enabled`,\r\n  `with_resource_constant_labels` -> `resource_constant_labels`)\r\n  ([#5071](https://github.com/open-telemetry/opentelemetry-specification/pull/5071))\r\n- Clarify that OTel SDKs should not use unofficial Prometheus clients.\r\n  ([#5082](https://github.com/open-telemetry/opentelemetry-specification/pull/5082))\r\n\r\n### OTEPs\r\n\r\n- Add OTEP for Semantic Convention Schema v2 with support for multiple convention\r\n  registries and resolved schema format\r\n  ([#4815](https://github.com/open-telemetry/opentelemetry-specification/pull/4815))"
 		},
 		{
+			"source": "genai",
+			"tag": "be551f8",
+			"version": "2026-05-19",
+			"publishedAt": "2026-05-19T16:31:21Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/be551f816a53c893e9af7234bf30394d01876dd1",
+			"body": "Add GenAI memory operation conventions (#140)"
+		},
+		{
+			"source": "genai",
+			"tag": "0bcb478",
+			"version": "2026-05-18",
+			"publishedAt": "2026-05-18T20:41:15Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/0bcb478696640451ab799f718298cf79a2d9a598",
+			"body": "Remove pre-release deprecated conventions (#167)"
+		},
+		{
+			"source": "genai",
+			"tag": "8508fbf",
+			"version": "2026-05-16",
+			"publishedAt": "2026-05-16T22:13:57Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8508fbfa5189ae50c7e95aa2fcd90c5c4998cbc7",
+			"body": "fix(mcp): add tool.call.arguments and tool.call.result to server span (#136)"
+		},
+		{
 			"source": "semconv",
 			"tag": "v1.41.1",
 			"version": "1.41.1",
 			"publishedAt": "2026-05-11T22:28:25Z",
 			"url": "https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.41.1",
 			"body": "## What's Changed\r\n* Exclude `k8s.container.cpu.limit_utilization` and `k8s.container.cpu.request_utilization` metrics from code generation (https://github.com/open-telemetry/semantic-conventions/issues/3711)\r\n\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/semantic-conventions/compare/v1.41.0...v1.41.1"
+		},
+		{
+			"source": "genai",
+			"tag": "debdd77",
+			"version": "2026-05-11.2",
+			"publishedAt": "2026-05-11T18:03:15Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/debdd770b8c0da9c814a495d55a1f678b5d34e4c",
+			"body": "Add workflow duration metric (#126)"
+		},
+		{
+			"source": "genai",
+			"tag": "d886ba6",
+			"version": "2026-05-11",
+			"publishedAt": "2026-05-11T02:47:47Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/d886ba674f225eff14829e8046ded54e08d9f282",
+			"body": "gen-ai: add plan operation for agent planning spans (#97)"
+		},
+		{
+			"source": "genai",
+			"tag": "a49a1a3",
+			"version": "2026-05-08",
+			"publishedAt": "2026-05-08T19:11:59Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/a49a1a336bd23add59476ab9507e255a94a6e08b",
+			"body": "Add `agent.name` sampling (#107)"
+		},
+		{
+			"source": "genai",
+			"tag": "fd074ca",
+			"version": "2026-05-05.3",
+			"publishedAt": "2026-05-05T04:02:12Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/fd074ca60142b45576cf5b99933e6d00c5511f13",
+			"body": "Simplify Weaver schema v2 model"
+		},
+		{
+			"source": "genai",
+			"tag": "773a3fd",
+			"version": "2026-05-05.4",
+			"publishedAt": "2026-05-05T04:02:12Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/773a3fd9be56f15fa75af07e67e01e79f97e492e",
+			"body": "Preserve gen_ai.output.type refinement notes"
+		},
+		{
+			"source": "genai",
+			"tag": "ebe3d1f",
+			"version": "2026-05-05",
+			"publishedAt": "2026-05-05T03:53:12Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/ebe3d1fb9fdda3398099e11ef91c4c490912f88d",
+			"body": "Prepare standalone GenAI semantic conventions repo"
+		},
+		{
+			"source": "genai",
+			"tag": "07bbdbe",
+			"version": "2026-05-05.2",
+			"publishedAt": "2026-05-05T03:53:12Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/07bbdbe4cc49df064953d73d052d165e6c3bbb4a",
+			"body": "Convert GenAI semantic conventions to Weaver schema v2"
 		},
 		{
 			"source": "semconv",

@@ -43,7 +43,10 @@ const data = await catalog()
 			<strong>The GenAI conventions</strong> are the same registry model in a separate repository,
 			split out of the conventions in v1.44.0. That repository has never cut a release &mdash; no
 			tags, a changelog reading only "Unreleased" &mdash; so it is tracked from its default branch,
-			dated rather than versioned, and marked unreleased everywhere it appears.
+			dated rather than versioned, and marked unreleased everywhere it appears. Its history is the
+			commits themselves: every commit touching the model tree is normalized, and the ones that
+			leave the model unchanged &mdash; a tooling bump, a link pin &mdash; are dropped rather than
+			published as a release with nothing in it.
 		</p>
 		<p class="m-0">
 			The split leaves roughly 59 attributes in both registries at once: deprecated
@@ -91,8 +94,12 @@ const data = await catalog()
 			<li>
 				History starts at semantic conventions v{data.semconv.versions.at(-1)}, specification
 				v{data.spec.versions.at(-1)} and OTLP v{data.proto.versions.at(-1)}. Anything described as
-				first seen there may be much older. The GenAI registry has no history at all yet &mdash;
-				tracking began {data.genai.versions.at(-1)}.
+				first seen there may be much older. The GenAI registry is walked commit by commit from
+				{" "}{data.genai.versions.at(-1)}, the point at which it became a repository of its own;
+				one commit earlier its filtered history still carries the 52 <code
+					class="font-mono text-[0.92em]">aws.*</code
+				> attributes the split dropped, and reading across that boundary would report 52 removals
+				the project never made.
 			</li>
 			<li>
 				Specification changes are tracked as requirements, not as prose diffs. A paragraph rewritten

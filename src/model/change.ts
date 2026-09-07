@@ -26,6 +26,8 @@ export type ChangeKind =
 	| "brief-changed"
 	| "note-changed"
 	| "examples-changed"
+	/** An attribute started or stopped being referenced by a signal or metric. */
+	| "usage-changed"
 	// Specification prose
 	| "requirement-added"
 	| "requirement-removed"
@@ -109,6 +111,7 @@ export const KIND_ORDER: ChangeKind[] = [
 	"requirement-reworded",
 	"requirement-moved",
 	"enum-members-changed",
+	"usage-changed",
 	"undeprecated",
 	"added",
 	"field-added",

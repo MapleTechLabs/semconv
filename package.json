@@ -5,7 +5,7 @@
 	"scripts": {
 		"ingest": "bun run src/ingest/main.ts",
 		"test": "bun test",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit && astro check",
 		"dev": "astro dev --port 4321",
 		"build": "astro build",
 		"preview": "astro preview --port 4321",
@@ -24,6 +24,7 @@
 		"yaml": "^2.8.1"
 	},
 	"devDependencies": {
+		"@astrojs/check": "^0.9.10",
 		"@cloudflare/workers-types": "^5.20260903.1",
 		"@types/bun": "^1.3.11",
 		"typescript": "^5.9.3",

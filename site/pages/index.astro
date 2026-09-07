@@ -8,7 +8,7 @@ import { formatDate, severityClass, versionLabel } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
 const data = await catalog()
-const linkable = new Set(data.attributes.map((a) => a.id))
+const linkable = data.linkableAttributes
 
 const requirements = data.spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
 
@@ -49,10 +49,18 @@ const domains = buildDomains(data).map((domain) => ({
 	signals: domain.metrics.length + domain.spans.length + domain.events.length + domain.entities.length,
 }))
 
-const feed = data.feed.map((entry) => ({
-	...entry,
-	significant: entry.diff.changes.filter((c) => c.severity !== "informational"),
-}))
+/**
+ * An untagged source moves by commit rather than by release, so its editorial
+ * churn — a reworded brief, a new example — is not front-page news, and forty
+ * consecutive rows of it would bury every tagged release under the fold. Those
+ * entries keep their own page and stay reachable from the neighbouring ones.
+ */
+const feed = data.feed
+	.map((entry) => ({
+		...entry,
+		significant: entry.diff.changes.filter((c) => c.severity !== "informational"),
+	}))
+	.filter((entry) => !UNRELEASED[entry.source] || entry.significant.length > 0)
 ---
 
 <Shell title={SITE.name} description={SITE.description}>
@@ -158,10 +166,12 @@ const feed = data.feed.map((entry) => ({
 							<a href={`/releases/${source}/${version}`} class="text-muted">
 								{significant.length > 6
 									? `All ${significant.length} notable changes`
-									: `Full diff from v${diff.from}`}
+									: `Full diff from ${versionLabel(diff.from)}`}
 								{diff.counts.informational > 0 && ` + ${diff.counts.informational} editorial`}
 							</a>
-							{release && <a href={release.url}>Upstream release notes</a>}
+							{release && (
+								<a href={release.url}>{UNRELEASED[source] ? "Upstream commit" : "Upstream release notes"}</a>
+							)}
 						</p>
 					</article>
 				))

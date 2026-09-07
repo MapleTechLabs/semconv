@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro"
-import { catalog, SOURCE_LABEL } from "../../src/model/catalog.ts"
+import { catalog, SOURCE_LABEL, UNRELEASED } from "../../src/model/catalog.ts"
+import { versionLabel } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
 const escape = (s: string) =>
@@ -9,27 +10,33 @@ export const GET: APIRoute = async ({ site }) => {
 	const data = await catalog()
 	const origin = site?.origin ?? SITE.origin
 
-	const items = data.feed.map(({ source, version, diff, release }) => {
-		const significant = diff.changes.filter((c) => c.severity !== "informational")
-		const lines = significant
-			.slice(0, 30)
-			.map((c) => `${c.severity.toUpperCase()} · ${c.entity} ${c.kind} · ${c.id} — ${c.detail}`)
-		const body = [
-			`${diff.counts.breaking} breaking, ${diff.counts.notable} notable, ${diff.counts.informational} editorial changes since v${diff.from}.`,
-			...lines,
-			significant.length > 30 ? `…and ${significant.length - 30} more.` : "",
-		]
-			.filter(Boolean)
-			.join("\n")
+	const items = data.feed
+		.filter(
+			// Same rule as the front page: a subscriber wants releases and the
+			// commits that changed something, not every wording fix on a branch.
+			({ source, diff }) => !UNRELEASED[source] || diff.changes.some((c) => c.severity !== "informational"),
+		)
+		.map(({ source, version, diff, release }) => {
+			const significant = diff.changes.filter((c) => c.severity !== "informational")
+			const lines = significant
+				.slice(0, 30)
+				.map((c) => `${c.severity.toUpperCase()} · ${c.entity} ${c.kind} · ${c.id} — ${c.detail}`)
+			const body = [
+				`${diff.counts.breaking} breaking, ${diff.counts.notable} notable, ${diff.counts.informational} editorial changes since ${versionLabel(diff.from)}.`,
+				...lines,
+				significant.length > 30 ? `…and ${significant.length - 30} more.` : "",
+			]
+				.filter(Boolean)
+				.join("\n")
 
-		return `	<item>
-		<title>${SOURCE_LABEL[source]} v${version} — ${diff.counts.breaking} breaking, ${diff.counts.notable} notable</title>
+			return `	<item>
+		<title>${SOURCE_LABEL[source]} ${versionLabel(version)} — ${diff.counts.breaking} breaking, ${diff.counts.notable} notable</title>
 		<link>${origin}/releases/${source}/${version}</link>
 		<guid isPermaLink="true">${origin}/releases/${source}/${version}</guid>
 		<pubDate>${new Date(release?.publishedAt ?? Date.now()).toUTCString()}</pubDate>
 		<description>${escape(body)}</description>
 	</item>`
-	})
+		})
 
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">

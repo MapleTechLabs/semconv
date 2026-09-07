@@ -53,7 +53,9 @@ bun run build
 
 `bun run ingest --force` re-normalizes every tracked release. It should produce a byte-identical
 `data/` — snapshots are fully sorted and gzipped at a fixed level precisely so that "the file
-changed" is a reliable signal that upstream moved.
+changed" is a reliable signal that upstream moved. For an untagged source it re-walks the history
+from the floor and drops the existing snapshots first, because which commits produce a distinct
+model is exactly what a changed normalizer changes.
 
 ## The GenAI registry is untagged
 
@@ -62,9 +64,27 @@ tags, a towncrier CHANGELOG reading only "Unreleased", and `stability: developme
 itself. Waiting for a tag would mean tracking nothing while the attributes are already in
 production use.
 
-So it is tracked from `main`, versioned by commit date (`2026-09-03`) with the short SHA kept as the
-tag, and labelled unreleased everywhere it appears. Snapshots are written only when the *normalized
-model* changes, not when the branch moves — otherwise `data/` would grow by the calendar.
+So its history is the commits themselves. Every commit touching `model/` is normalized, versioned
+by commit date (`2026-09-01`) with the short SHA kept as the tag, and labelled unreleased
+everywhere it appears. Two rules keep that proportional to real change:
+
+- A commit is kept only when the **differ** finds something in it. Most do not — a Weaver bump, a
+  link pin, a reflowed brief — and gating on the normalized bytes instead would be stricter than
+  the diff and publish release pages listing no changes at all.
+- Upstream merges several model changes on a busy day, so the second one that day takes
+  `2026-05-05.2`. The suffix sorts after the bare date, and without it the second commit would
+  overwrite the first snapshot.
+
+The walk floors at `ebe3d1f`, the commit that made this a repository of its own. One commit earlier
+the filtered history still carries the 52 `aws.*` attributes the split dropped, so crossing that
+boundary would report 52 removals the project never made. Everything older is already covered by
+the tagged semantic-conventions snapshots, which carried `gen_ai.*` until v1.44.0 deprecated it in
+place.
+
+Because the registry is `development` throughout, nothing in it can rank `breaking` — see
+[Severity](#severity). Its editorial commits are also kept off the front page and the RSS feed: a
+reworded brief on an untagged branch is not news, and forty of them in a row would bury every
+tagged release.
 
 The consequence worth knowing: ~59 attributes exist in **both** registries — deprecated
 "Moved to..." stubs in semantic-conventions, live definitions in GenAI. Anything answering "is this
@@ -143,9 +163,9 @@ matching asset (`/mcp`, 404s). Asset paths are served on `www` too, with every p
 
 ## Data
 
-Snapshots start at semconv v1.30.0, specification v1.42.0 and OTLP v1.4.0. Earlier releases used
-schemas and layouts different enough that diffing across them would report changes the projects
-never made.
+Snapshots start at semconv v1.30.0, specification v1.42.0, OTLP v1.4.0 and GenAI `ebe3d1f`
+(2026-05-05). Earlier releases used schemas and layouts different enough that diffing across them
+would report changes the projects never made.
 
 ## Licence
 

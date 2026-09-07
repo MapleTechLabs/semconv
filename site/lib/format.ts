@@ -88,6 +88,7 @@ const KIND_LABEL: Record<string, string> = {
 	"brief-changed": "wording",
 	"note-changed": "guidance",
 	"examples-changed": "examples",
+	"usage-changed": "usage",
 	"first-seen": "added",
 	"requirement-added": "new rule",
 	"requirement-removed": "rule dropped",
