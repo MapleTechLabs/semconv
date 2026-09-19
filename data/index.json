@@ -1,6 +1,30 @@
 {
-	"generatedAt": "2026-09-01T00:13:46Z",
+	"generatedAt": "2026-09-16T00:36:37Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "be23fcc",
+			"version": "2026-09-16",
+			"publishedAt": "2026-09-16T00:36:37Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/be23fcc250f72e6f740c96d05fa6f12fbee3d71a",
+			"body": "Allow conversation ID on tool execution spans (#518)"
+		},
+		{
+			"source": "spec",
+			"tag": "v1.61.0",
+			"version": "1.61.0",
+			"publishedAt": "2026-09-14T14:53:49Z",
+			"url": "https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.61.0",
+			"body": "### Context\r\n\r\n- Recommend instead of require global propagators.\r\n  ([#5294](https://github.com/open-telemetry/opentelemetry-specification/pull/5294))\r\n\r\n### Metrics\r\n\r\n- Add `view_matching_mode` parameter to `MeterProvider` to support composable View matching.\r\n  ([#5173](https://github.com/open-telemetry/opentelemetry-specification/pull/5173))\r\n- Clarify `maxExportBatchSize` behavior, timeouts, and error handling for\r\n  Periodic exporting MetricReader.\r\n  ([#5265](https://github.com/open-telemetry/opentelemetry-specification/pull/5265))\r\n- Mark `maxExportBatchSize` on Periodic exporting MetricReader as stable.\r\n  ([#5291](https://github.com/open-telemetry/opentelemetry-specification/pull/5291))\r\n\r\n### Resource\r\n\r\n- Allow the named `service` resource detector (used via declarative config or explicit detector configuration) to fall back to\r\n  platform-specific sources when `OTEL_SERVICE_NAME` is not set.\r\n  ([#5280](https://github.com/open-telemetry/opentelemetry-specification/pull/5280))\r\n\r\n### Common\r\n\r\n- Add `AttributeValueDepthLimit` for nested array and map attribute values.\r\n  ([#5186](https://github.com/open-telemetry/opentelemetry-specification/pull/5186))\r\n- Remove requirement for attribute ordering from compliance matrix.\r\n  ([#5205](https://github.com/open-telemetry/opentelemetry-specification/pull/5205))\r\n\r\n### Compatibility\r\n\r\n- Stabilize content negotiation section for the Prometheus exporter.\r\n  ([#5136](https://github.com/open-telemetry/opentelemetry-specification/pull/5136))\r\n- Update the OpenTelemetry Exponential Histogram to Prometheus Native Histogram\r\n  with standard (exponential) schema transformation.\r\n  ([#5125](https://github.com/open-telemetry/opentelemetry-specification/pull/5125))\r\n- Stabilize `resource_constant_labels` configuration for the Prometheus exporter.\r\n  ([#5130](https://github.com/open-telemetry/opentelemetry-specification/pull/5130))\r\n\r\n## New Contributors\r\n* @aryansk made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5260\r\n* @mmanciop made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5280\r\n* @herin049 made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5190\r\n"
+		},
+		{
+			"source": "genai",
+			"tag": "b06f7a2",
+			"version": "2026-09-10",
+			"publishedAt": "2026-09-10T02:21:00Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/b06f7a2c840ceeacd8478acd3443e697ce390f96",
+			"body": "Mark gen_ai.agent.name as sampling-relevant on execute_tool and plan spans (#495)"
+		},
 		{
 			"source": "genai",
 			"tag": "5ca9052",
