@@ -63,6 +63,7 @@ describe.skipIf(!built)("mcp worker", () => {
 			"get_attribute",
 			"get_otlp_message",
 			"list_versions",
+			"search",
 			"search_attributes",
 			"search_requirements",
 		])

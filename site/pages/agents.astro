@@ -1,0 +1,238 @@
+---
+import Shell from "../layouts/Shell.astro"
+import { catalog } from "../../src/model/catalog.ts"
+import { TOOLS } from "../../src/mcp/worker.ts"
+import { SITE } from "../lib/site.ts"
+
+/**
+ * The page for someone whose first question is "can my agent use this?".
+ * Everything on it is the live surface: the tool list is the same array the
+ * Worker advertises, so a tool added there shows up here on the next build.
+ */
+const data = await catalog()
+const mcp = `${SITE.origin}/mcp`
+
+const installs = [
+	{
+		id: "claude-code",
+		label: "Claude Code",
+		lang: "bash",
+		code: `claude mcp add --transport http semconv ${mcp}`,
+	},
+	{
+		id: "codex",
+		label: "Codex",
+		lang: "bash",
+		code: `codex mcp add semconv --url ${mcp}`,
+	},
+	{
+		id: "cursor",
+		label: "Cursor",
+		lang: "json",
+		note: ".cursor/mcp.json",
+		code: `{\n  "mcpServers": {\n    "semconv": { "url": "${mcp}" }\n  }\n}`,
+	},
+	{
+		id: "vscode",
+		label: "VS Code",
+		lang: "json",
+		note: ".vscode/mcp.json",
+		code: `{\n  "servers": {\n    "semconv": { "type": "http", "url": "${mcp}" }\n  }\n}`,
+	},
+	{
+		id: "generic",
+		label: "Anything else",
+		lang: "json",
+		note: "Streamable HTTP, no auth, no session",
+		code: `{\n  "mcpServers": {\n    "semconv": { "type": "streamable-http", "url": "${mcp}" }\n  }\n}`,
+	},
+] as const
+
+const prompts = [
+	{
+		title: "Audit the attributes a service emits",
+		prompt:
+			"Find every OpenTelemetry attribute key this repository sets on spans, logs or metrics, then check them against semconv.com with check_attribute_names. List the ones that are deprecated or renamed, with the replacement for each, and tell me which files set them.",
+	},
+	{
+		title: "Prepare an upgrade",
+		prompt: `We instrument against semantic conventions v${data.semconv.versions.at(-1)}. Use diff_versions on semconv.com to list every breaking and notable change up to v${data.semconv.latest.version} that touches the http, db and messaging namespaces, and say which of them affect this codebase.`,
+	},
+	{
+		title: "Answer a spec question with a citation",
+		prompt:
+			"Using semconv.com's search_requirements, what does the OpenTelemetry specification require of an SDK when the exporter returns a retryable error? Quote the MUST/SHOULD lines and link the section.",
+	},
+	{
+		title: "Name a new attribute correctly",
+		prompt:
+			"I want to record the size of a queue in a span. Search semconv.com for existing attributes or metrics that already cover this before we invent a custom key, and recommend one.",
+	},
+]
+
+const curl = `curl -s ${mcp} \\
+  -H 'content-type: application/json' \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"search","arguments":{"query":"which attribute holds the http status code"}}}'`
+---
+
+<Shell
+	title="Use with your agent"
+	description="semconv.com is a public MCP server and a JSON API. Point Claude Code, Codex, Cursor or any MCP client at it and your agent stops guessing attribute names."
+>
+	<p class="eyebrow">Agents</p>
+	<h1 class="page-title mt-2">Your agent should not guess attribute names</h1>
+	<p class="mt-3 mb-0 max-w-[64ch] text-muted">
+		A model's training data is months behind the registry, and the conventions rename keys every
+		release. Everything on this site is also a read-only <strong class="font-medium text-ink">MCP
+		server</strong> at <code class="code-chip">{mcp}</code>: no key, no session, one URL. Add it once
+		and the agent can check a name, diff two releases or quote the specification instead of
+		remembering it.
+	</p>
+
+	<section class="mt-10">
+		<h2 class="eyebrow">Add it</h2>
+		<div class="mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Client">
+			{
+				installs.map((install, i) => (
+					<button
+						type="button"
+						role="tab"
+						class="chip-btn install-tab"
+						data-install={install.id}
+						data-on={i === 0 ? "" : undefined}
+						aria-selected={i === 0 ? "true" : "false"}
+					>
+						{install.label}
+					</button>
+				))
+			}
+		</div>
+		{
+			installs.map((install, i) => (
+				<div class="install-panel mt-3" data-install={install.id} role="tabpanel" hidden={i !== 0}>
+					{"note" in install && install.note && <p class="m-0 mb-1.5 font-mono text-[11.5px] text-faint">{install.note}</p>}
+					<div class="relative">
+						<pre class="m-0 overflow-x-auto rounded-lg border border-rule bg-elevated px-4 py-3 font-mono text-[13px] leading-relaxed"><code>{install.code}</code></pre>
+						<button
+							type="button"
+							class="copy-btn absolute right-2 top-2 rounded-[5px] border border-rule bg-surface px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-muted transition-colors hover:border-rule-strong hover:text-ink"
+							data-copy={install.code}
+						>
+							Copy
+						</button>
+					</div>
+				</div>
+			))
+		}
+		<p class="mt-3 mb-0 text-[13px] text-faint max-w-[64ch]">
+			Streamable HTTP, JSON-RPC in a single response per call. CORS is open, so a browser-side agent
+			can call it too.
+		</p>
+	</section>
+
+	<section class="mt-10">
+		<h2 class="eyebrow">What it can do</h2>
+		<p class="mt-2 mb-0 text-[13.5px] text-muted max-w-[64ch]">
+			{TOOLS.length} tools, each reading the same JSON the pages are built from, so an answer here
+			and an answer on the site cannot disagree.
+		</p>
+		<ul class="hairline-grid mt-4 m-0 list-none p-0 sm:grid-cols-2">
+			{
+				TOOLS.map((tool) => (
+					<li class="hairline-cell">
+						<code class="font-mono text-[13.5px] font-semibold text-ink">{tool.name}</code>
+						<p class="mt-1.5 mb-0 text-[13px] leading-relaxed text-muted">{tool.description}</p>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<section class="mt-10">
+		<h2 class="eyebrow">Things to ask it</h2>
+		<p class="mt-2 mb-0 text-[13.5px] text-muted max-w-[64ch]">
+			Copy one into your agent. Each is phrased so the agent reaches for the server rather than its memory.
+		</p>
+		<ul class="mt-4 m-0 flex list-none flex-col gap-3 p-0">
+			{
+				prompts.map((p) => (
+					<li class="callout relative pr-20">
+						<p class="m-0 text-[13.5px] font-medium text-ink">{p.title}</p>
+						<p class="mt-1 mb-0 text-[13.5px] leading-relaxed text-muted">{p.prompt}</p>
+						<button
+							type="button"
+							class="copy-btn absolute right-3 top-3 rounded-[5px] border border-rule bg-surface px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-muted transition-colors hover:border-rule-strong hover:text-ink"
+							data-copy={p.prompt}
+						>
+							Copy
+						</button>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<section class="mt-10">
+		<h2 class="eyebrow">Without an MCP client</h2>
+		<p class="mt-2 mb-0 text-[13.5px] text-muted max-w-[64ch]">
+			The server is plain JSON-RPC over POST; <code class="code-chip">search</code> is the tool to
+			start with. And every page has a static twin an agent can <code class="code-chip">fetch</code>:
+		</p>
+		<div class="relative mt-3">
+			<pre class="m-0 overflow-x-auto rounded-lg border border-rule bg-elevated px-4 py-3 font-mono text-[12.5px] leading-relaxed"><code>{curl}</code></pre>
+			<button
+				type="button"
+				class="copy-btn absolute right-2 top-2 rounded-[5px] border border-rule bg-surface px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-muted transition-colors hover:border-rule-strong hover:text-ink"
+				data-copy={curl}
+			>
+				Copy
+			</button>
+		</div>
+		<ul class="mt-4 m-0 list-none p-0 text-[13.5px]">
+			{
+				[
+					["/llms.txt", "the map of this surface, for a model to read first"],
+					["/api/search.json", "one index over everything, with a type and URL per row"],
+					["/api/attributes/{id}.json", "one attribute in full, plus its release-by-release history"],
+					["/api/renames.json", "deprecated name → successor name"],
+					["/api/diff/{source}/{from}...{to}.json", "every change between two tracked versions"],
+					["/api/requirements.json", "every MUST, SHOULD and MAY in the spec and in OTLP"],
+					["/feed.xml", "RSS, one entry per release"],
+				].map(([path, what]) => (
+					<li class="flex flex-wrap items-baseline gap-x-3 border-b border-rule py-1.5 last:border-0">
+						<a href={path?.replace(/\{.*$/, "")} class="font-mono text-[13px] no-underline hover:underline">{path}</a>
+						<span class="text-muted">{what}</span>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Shell>
+
+<script>
+	const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".install-tab"))
+	const panels = Array.from(document.querySelectorAll<HTMLElement>(".install-panel"))
+	for (const tab of tabs) {
+		tab.addEventListener("click", () => {
+			const id = tab.dataset["install"]
+			for (const other of tabs) {
+				const on = other === tab
+				other.toggleAttribute("data-on", on)
+				other.setAttribute("aria-selected", String(on))
+			}
+			for (const panel of panels) panel.hidden = panel.dataset["install"] !== id
+		})
+	}
+
+	for (const button of document.querySelectorAll<HTMLButtonElement>(".copy-btn")) {
+		button.addEventListener("click", async () => {
+			try {
+				await navigator.clipboard.writeText(button.dataset["copy"] ?? "")
+				button.textContent = "Copied"
+				setTimeout(() => (button.textContent = "Copy"), 1200)
+			} catch {
+				button.textContent = "Select it"
+			}
+		})
+	}
+</script>

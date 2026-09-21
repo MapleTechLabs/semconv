@@ -119,8 +119,10 @@ straight off the CDN. `/mcp` is a public, read-only MCP server (streamable HTTP,
 session state) whose tools read those same asset files through the Worker's `ASSETS` binding — so
 the MCP answers and the pages cannot drift apart.
 
+`search` is the front door: a question in plain words, ranked over everything the site knows.
 The tool that earns its keep is `check_attribute_names`: give it the attribute keys a codebase
-emits and it reports which are deprecated, renamed, or absent from the registry.
+emits and it reports which are deprecated, renamed, or absent from the registry. `/agents` is the
+human-readable version of this section, with install snippets per client and prompts to paste.
 
 ## Severity
 

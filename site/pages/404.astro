@@ -1,0 +1,81 @@
+---
+import Shell from "../layouts/Shell.astro"
+
+/**
+ * Most 404s here are a guessed attribute URL: `/attributes/db.statment`, or a
+ * name that was renamed after someone bookmarked it. So the page reads the
+ * path, searches the index for it, and offers the closest rows instead of a
+ * dead end. Served by Cloudflare's asset layer for any path with no file.
+ */
+---
+
+<Shell title="Not found" description="That page does not exist. The closest things that do are listed here.">
+	<p class="eyebrow">404</p>
+	<h1 class="page-title mt-2">Nothing at this address</h1>
+	<p id="lookup" class="mt-3 mb-0 text-muted max-w-[60ch]">
+		There is no page at <code id="path" class="code-chip"></code>.
+	</p>
+
+	<section id="closest" class="mt-8" hidden>
+		<h2 class="eyebrow">Closest matches</h2>
+		<ul id="matches" class="mt-2 m-0 list-none p-0"></ul>
+	</section>
+
+	<form action="/search" method="get" role="search" class="mt-8 flex max-w-[32rem] gap-2">
+		<input id="q" name="q" type="search" placeholder="Search everything…" autocomplete="off" spellcheck="false" class="field flex-1 font-mono" />
+		<button type="submit" class="chip-btn h-9 border-rule-strong text-ink">Search</button>
+	</form>
+
+	<p class="mt-8 mb-0 text-[13px] text-faint max-w-[60ch]">
+		Or start from the <a href="/attributes">registry</a>, the <a href="/domains">domains</a>, or the
+		<a href="/">release history</a>. If a link on this site brought you here, that is a bug worth
+		<a href="https://github.com/MapleTechLabs/otel-spec-tracker/issues">reporting</a>.
+	</p>
+</Shell>
+
+<script>
+	import { highlight, loadIndex, search } from "../lib/search-client.ts"
+
+	const path = decodeURIComponent(location.pathname)
+	;(document.getElementById("path") as HTMLElement).textContent = path
+
+	// `/attributes/db.statment` -> `db.statment`; `/domains/databases` -> `databases`.
+	const leaf = path.split("/").filter(Boolean).at(-1) ?? ""
+	const kind = path.startsWith("/attributes/") ? "attribute" : path.startsWith("/domains/") ? "domain" : null
+	const q = document.getElementById("q") as HTMLInputElement
+	const closest = document.getElementById("closest") as HTMLElement
+	const matches = document.getElementById("matches") as HTMLElement
+
+	if (leaf && !/\.(json|xml|txt|html)$/.test(leaf)) {
+		q.value = leaf
+		const entries = await loadIndex()
+		// The full name first; if that is a typo nothing lands, so fall back to its
+		// segments, which is enough to surface the namespace's neighbours.
+		let result = search(entries, leaf, { type: kind, limit: 8 })
+		if (result.total === 0) result = search(entries, leaf.split(/[._-]+/).slice(0, 2).join(" "), { type: kind, limit: 8 })
+		if (result.total === 0) result = search(entries, leaf, { limit: 8 })
+		if (result.hits.length > 0) {
+			for (const hit of result.hits) {
+				const li = document.createElement("li")
+				li.className = "flex flex-wrap items-baseline gap-x-2.5 border-b border-rule py-2 last:border-0"
+				const a = document.createElement("a")
+				a.href = hit.url
+				a.className = "font-mono text-[13.5px] font-medium no-underline hover:underline"
+				a.innerHTML = highlight(hit.id, result.query.terms)
+				li.append(a)
+				if (hit.renamedTo) {
+					const s = document.createElement("span")
+					s.className = "font-mono text-[12.5px] text-muted"
+					s.textContent = `→ ${hit.renamedTo}`
+					li.append(s)
+				}
+				const t = document.createElement("span")
+				t.className = "text-[13px] text-muted"
+				t.textContent = hit.text
+				li.append(t)
+				matches.append(li)
+			}
+			closest.hidden = false
+		}
+	}
+</script>

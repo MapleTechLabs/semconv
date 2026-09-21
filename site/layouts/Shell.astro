@@ -2,6 +2,7 @@
 import "../styles/global.css"
 import MapleMark from "../components/MapleMark.astro"
 import SemconvMark from "../components/SemconvMark.astro"
+import Palette from "../components/Palette.astro"
 import { SITE } from "../lib/site.ts"
 
 interface Props {
@@ -21,6 +22,7 @@ const nav = [
 	{ href: "/spec", label: "Spec" },
 	{ href: "/otlp", label: "OTLP" },
 	{ href: "/diff", label: "Compare" },
+	{ href: "/agents", label: "Agents" },
 	{ href: "/about", label: "About" },
 ]
 const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href))
@@ -94,17 +96,20 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 							id="site-search"
 							type="search"
 							name="q"
-							placeholder="Search everything"
+							placeholder="Search"
+							data-palette-trigger
 							aria-label="Search"
 							autocomplete="off"
 							spellcheck="false"
 							class="h-full w-full bg-transparent pl-7 pr-7 text-xs text-ink outline-none placeholder:text-muted"
 						/>
-						<kbd class="pointer-events-none absolute right-2 hidden font-mono text-[10px] font-medium tracking-widest text-muted/70 sm:inline">/</kbd>
+						<kbd class="pointer-events-none absolute right-2 hidden font-mono text-[10px] font-medium tracking-widest text-muted/70 sm:inline" data-palette-kbd>⌘K</kbd>
 					</label>
 				</form>
 			</div>
 		</header>
+
+		<Palette />
 
 		<main id="main" tabindex="-1" class:list={["mx-auto px-5 py-10 outline-none", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}>
 			<slot />
@@ -153,19 +158,6 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 				</div>
 			</div>
 		</footer>
-		<script>
-			// `/` focuses search, the reflex on any reference site.
-			document.addEventListener("keydown", (event) => {
-				const target = event.target as HTMLElement | null
-				if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) return
-				if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
-				const field = document.getElementById("q") ?? document.getElementById("site-search")
-				if (!(field instanceof HTMLInputElement)) return
-				event.preventDefault()
-				field.focus()
-				field.select()
-			})
-		</script>
 	</body>
 </html>
 

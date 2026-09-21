@@ -37,6 +37,8 @@ export interface SearchEntry {
 	readonly url: string
 	/** Stability, namespace, level — whatever distinguishes one hit from its neighbours. */
 	readonly meta: string
+	/** Deprecated attributes with a successor carry it, so a hit on the old name can show the new one. */
+	readonly renamedTo?: string
 }
 
 export const GET: APIRoute = async () => {
@@ -64,6 +66,7 @@ export const GET: APIRoute = async () => {
 				attribute.type,
 				registry === "genai" ? "genai" : attribute.namespace,
 			].join(" · "),
+			...(attribute.deprecated?.renamedTo ? { renamedTo: attribute.deprecated.renamedTo } : {}),
 		})
 	}
 

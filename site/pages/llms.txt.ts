@@ -72,10 +72,14 @@ that redirects to the website. Both are covered here.
 ## MCP
 
 ${origin}/mcp is a public, read-only MCP server (streamable HTTP, no auth, no session state).
-Tools: list_versions, check_attribute_names, get_attribute, search_attributes, diff_versions,
+Tools: search, list_versions, check_attribute_names, get_attribute, search_attributes, diff_versions,
 search_requirements, get_otlp_message.
+search takes a question in plain words and ranks everything the site knows - both registries,
+metrics, signals, spec and OTLP requirements, wire messages - so it is the place to start.
 check_attribute_names takes the attribute keys a codebase emits and reports which are deprecated,
 renamed, or absent from the registry - use it instead of answering from training data.
+
+Setup for Claude Code, Codex, Cursor and VS Code, with example prompts: ${origin}/agents
 
 ## Endpoints
 

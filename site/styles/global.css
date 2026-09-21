@@ -179,3 +179,32 @@ p a:hover {
 @utility code-chip {
 	@apply rounded bg-elevated px-1.5 py-0.5 font-mono text-[0.9em] text-ink;
 }
+
+/* Search-term highlight: a tint, never a colour of its own. */
+mark {
+	background: var(--color-notable-bg);
+	color: inherit;
+	border-radius: 2px;
+	padding: 0 1px;
+}
+
+/* The command palette is a native <dialog>; the backdrop is the only shadow on the site. */
+dialog.palette {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	max-width: none;
+	max-height: none;
+	width: 100%;
+	height: 100%;
+	inset: 0;
+	position: fixed;
+}
+dialog.palette::backdrop {
+	background: color-mix(in oklab, var(--color-deep) 70%, transparent);
+	backdrop-filter: blur(2px);
+}
+dialog.palette[open] {
+	display: block;
+}

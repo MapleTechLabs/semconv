@@ -85,130 +85,76 @@ const types = [
 	</noscript>
 
 	<p class="mt-12 mb-0 text-[13px] text-faint max-w-[68ch]">
-		Matching is plain substring, across identifiers, descriptions and requirement text; every term
-		you type has to appear somewhere. Requirements and OTLP messages link upstream, to the document
+		Every term you type has to land somewhere: an identifier, a segment of one
+		(<code class="code-chip">status</code> finds <code class="code-chip">http.response.status_code</code>),
+		a description or a requirement. Prefix with <code class="code-chip">attr:</code>,
+		<code class="code-chip">metric:</code>, <code class="code-chip">spec:</code> or
+		<code class="code-chip">otlp:</code> to narrow. A deprecated name shows what replaced it.
+		For a question in plain words, <a href="/agents">point your agent at the MCP server</a>. Requirements and OTLP messages link upstream, to the document
 		at the tracked tag. The whole index is one file:{" "}
 		<a href="/api/search.json" class="font-mono">/api/search.json</a>.
 	</p>
 </Shell>
 
 <script>
-	interface Entry {
-		type: string
-		id: string
-		text: string
-		url: string
-		meta: string
-	}
+	import { SIGNAL_TYPES, TYPE_LABEL, highlight, loadIndex, rememberQuery, search, type Indexed } from "../lib/search-client.ts"
 
 	const input = document.getElementById("q") as HTMLInputElement
 	const results = document.getElementById("results") as HTMLElement
 	const status = document.getElementById("status") as HTMLElement
 	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".type-btn"))
 
-	const TYPE_LABEL: Record<string, string> = {
-		attribute: "attribute",
-		metric: "metric",
-		span: "span",
-		event: "event",
-		entity: "entity",
-		requirement: "requirement",
-		otlp: "otlp",
-		domain: "domain",
-	}
-	// Domains first: one of them is usually a better answer than any single row.
-	const TYPE_RANK: Record<string, number> = {
-		domain: 0,
-		attribute: 1,
-		metric: 2,
-		span: 3,
-		event: 4,
-		entity: 5,
-		otlp: 6,
-		requirement: 7,
-	}
-	const SIGNAL_TYPES = new Set(["span", "event", "entity"])
-
 	const LIMIT = 80
-
-	let entries: (Entry & { haystack: string; lowerId: string })[] = []
+	let entries: Indexed[] = []
 	let type = "all"
 
-	const inType = (entry: Entry) =>
-		type === "all" || (type === "signal" ? SIGNAL_TYPES.has(entry.type) : entry.type === type)
-
-	/** Exact id, then id prefix, then id, then prose. Cheap and predictable. */
-	function score(entry: (typeof entries)[number], terms: string[]): number | null {
-		for (const term of terms) if (!entry.haystack.includes(term)) return null
-		const first = terms[0] as string
-		if (entry.lowerId === first) return 0
-		if (entry.lowerId.startsWith(first)) return 1
-		if (entry.lowerId.includes(first)) return 2
-		if (entry.text.toLowerCase().includes(first)) return 3
-		return 4
+	const setType = (next: string) => {
+		type = next
+		for (const button of buttons) button.toggleAttribute("data-on", button.dataset["type"] === next)
 	}
 
 	function render() {
-		const query = input.value.trim().toLowerCase()
-		const terms = query.split(/\s+/).filter(Boolean)
-
-		if (terms.length === 0) {
+		const raw = input.value.trim()
+		if (raw === "") {
 			results.replaceChildren()
 			status.textContent = `${entries.length.toLocaleString("en-GB")} definitions indexed. Start typing.`
-			for (const button of buttons) {
-				const count = button.querySelector(".type-count") as HTMLElement
-				count.textContent = ""
-			}
+			for (const button of buttons) (button.querySelector(".type-count") as HTMLElement).textContent = ""
 			return
 		}
 
-		const scored: { entry: (typeof entries)[number]; rank: number }[] = []
-		const perType: Record<string, number> = {}
-		for (const entry of entries) {
-			const rank = score(entry, terms)
-			if (rank === null) continue
-			perType[entry.type] = (perType[entry.type] ?? 0) + 1
-			if (!inType(entry)) continue
-			scored.push({ entry, rank })
-		}
-		scored.sort(
-			(a, b) =>
-				a.rank - b.rank ||
-				(TYPE_RANK[a.entry.type] ?? 9) - (TYPE_RANK[b.entry.type] ?? 9) ||
-				a.entry.id.length - b.entry.id.length ||
-				a.entry.id.localeCompare(b.entry.id),
-		)
+		const result = search(entries, raw, { type, limit: LIMIT })
+		// A typed prefix is a filter; reflect it in the buttons rather than fight it.
+		if (result.query.type && result.query.type !== type) setType(result.query.type)
 
 		for (const button of buttons) {
 			const value = button.dataset["type"] ?? "all"
 			const count = button.querySelector(".type-count") as HTMLElement
 			const n =
 				value === "all"
-					? Object.values(perType).reduce((sum, x) => sum + x, 0)
+					? Object.values(result.perType).reduce((sum, x) => sum + x, 0)
 					: value === "signal"
-						? [...SIGNAL_TYPES].reduce((sum, key) => sum + (perType[key] ?? 0), 0)
-						: (perType[value] ?? 0)
+						? [...SIGNAL_TYPES].reduce((sum, key) => sum + (result.perType[key] ?? 0), 0)
+						: (result.perType[value] ?? 0)
 			count.textContent = ` ${n}`
 			button.classList.toggle("opacity-40", value !== "all" && n === 0)
 		}
 
-		results.replaceChildren(...scored.slice(0, LIMIT).map((hit) => row(hit.entry)))
+		results.replaceChildren(...result.hits.map((hit) => row(hit, result.query.terms)))
 		status.textContent =
-			scored.length === 0
-				? "Nothing matches."
-				: scored.length > LIMIT
-					? `Showing the first ${LIMIT} of ${scored.length} matches.`
-					: `${scored.length} ${scored.length === 1 ? "match" : "matches"}.`
+			result.total === 0
+				? "Nothing matches. Fewer words, or a different spelling?"
+				: result.total > LIMIT
+					? `Showing the first ${LIMIT} of ${result.total} matches.`
+					: `${result.total} ${result.total === 1 ? "match" : "matches"}.`
 
 		const url = new URL(location.href)
-		if (input.value.trim()) url.searchParams.set("q", input.value.trim())
-		else url.searchParams.delete("q")
+		url.searchParams.set("q", raw)
 		if (type === "all") url.searchParams.delete("type")
 		else url.searchParams.set("type", type)
 		history.replaceState(null, "", url)
 	}
 
-	function row(entry: Entry): HTMLElement {
+	function row(entry: Indexed, terms: readonly string[]): HTMLElement {
 		const li = document.createElement("li")
 		li.className = "border-b border-rule py-2"
 
@@ -221,18 +167,28 @@ const types = [
 
 		const link = document.createElement("a")
 		link.href = entry.url
-		link.className = "font-mono text-[13.5px] font-medium break-all"
-		link.textContent = entry.id
+		link.className = "font-mono text-[13.5px] font-medium break-all no-underline hover:underline"
+		link.innerHTML = highlight(entry.id, terms)
+		link.addEventListener("click", () => rememberQuery(input.value))
+
+		head.append(tag, link)
+
+		if (entry.renamedTo) {
+			const successor = document.createElement("a")
+			successor.href = `/attributes/${encodeURIComponent(entry.renamedTo)}`
+			successor.className = "font-mono text-[12.5px] text-muted"
+			successor.textContent = `→ ${entry.renamedTo}`
+			head.append(successor)
+		}
 
 		const meta = document.createElement("span")
 		meta.className = "text-[12px] text-faint"
 		meta.textContent = entry.meta
-
-		head.append(tag, link, meta)
+		head.append(meta)
 
 		const body = document.createElement("p")
 		body.className = "mt-0.5 mb-0 pl-0 sm:pl-[5.5rem] text-[13.5px] text-muted max-w-[86ch]"
-		body.textContent = entry.text
+		body.innerHTML = highlight(entry.text, terms)
 
 		li.append(head)
 		if (entry.text) li.append(body)
@@ -241,8 +197,7 @@ const types = [
 
 	for (const button of buttons) {
 		button.addEventListener("click", () => {
-			type = button.dataset["type"] ?? "all"
-			for (const other of buttons) other.toggleAttribute("data-on", other === button)
+			setType(button.dataset["type"] ?? "all")
 			render()
 		})
 	}
@@ -251,18 +206,9 @@ const types = [
 	const params = new URLSearchParams(location.search)
 	input.value = params.get("q") ?? ""
 	const initialType = params.get("type")
-	if (initialType && buttons.some((b) => b.dataset["type"] === initialType)) {
-		type = initialType
-		for (const button of buttons) button.toggleAttribute("data-on", button.dataset["type"] === initialType)
-	}
+	if (initialType && buttons.some((b) => b.dataset["type"] === initialType)) setType(initialType)
 
-	const response = await fetch("/api/search.json")
-	const payload = (await response.json()) as { entries: Entry[] }
-	entries = payload.entries.map((entry) => ({
-		...entry,
-		lowerId: entry.id.toLowerCase(),
-		haystack: `${entry.id} ${entry.text} ${entry.meta}`.toLowerCase(),
-	}))
+	entries = await loadIndex()
 	render()
 	input.focus()
 </script>

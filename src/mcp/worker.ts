@@ -12,6 +12,7 @@
  */
 
 import { SITE } from "../site.ts"
+import { retrieve, type IndexEntry } from "./search.ts"
 
 interface Env {
 	ASSETS: { fetch: (request: Request) => Promise<Response> }
@@ -26,7 +27,26 @@ interface JsonRpcRequest {
 
 const PROTOCOL_VERSION = "2025-06-18"
 
-const TOOLS = [
+export const TOOLS = [
+	{
+		name: "search",
+		description:
+			"Search everything semconv.com knows in one call: both attribute registries, metrics, spans, events, entities, every MUST/SHOULD/MAY in the specification and in OTLP, the OTLP wire messages and the domain pages. Takes a question in plain words (\"which attribute holds the HTTP status code\") or an identifier; ranks by how many terms land on ids over prose. Start here, then get_attribute or diff_versions for the full record.",
+		inputSchema: {
+			type: "object",
+			properties: {
+				query: { type: "string", description: "Plain words or an identifier. Filler is ignored." },
+				type: {
+					type: "string",
+					enum: ["all", "attribute", "metric", "signal", "requirement", "otlp", "domain"],
+					description: "Narrow to one kind of thing. `signal` covers spans, events and entities. Default all.",
+				},
+				limit: { type: "number", description: "Maximum results, default 20, at most 50." },
+			},
+			required: ["query"],
+			additionalProperties: false,
+		},
+	},
 	{
 		name: "list_versions",
 		description:
@@ -147,6 +167,27 @@ const text = (value: unknown) => ({
 
 async function callTool(name: string, args: Json, env: Env, origin: string) {
 	switch (name) {
+		case "search": {
+			const query = typeof args?.query === "string" ? args.query.trim() : ""
+			if (!query) return text({ error: "`query` is required." })
+			const payload = await asset(env, "/api/search.json", origin)
+			if (!payload) return text({ error: "index unavailable" })
+			const entries = payload.entries as IndexEntry[]
+			const limit = Math.min(50, Math.max(1, Number(args?.limit) || 20))
+			const type = typeof args?.type === "string" ? args.type : undefined
+			const hits = retrieve(entries, query, { type, limit }).map((hit) => ({
+				...hit,
+				url: hit.url.startsWith("/") ? `${SITE.origin}${hit.url}` : hit.url,
+			}))
+			return text({
+				query,
+				count: hits.length,
+				semconvVersion: payload.semconvVersion,
+				hint: hits.length === 0 ? "No term landed. Try fewer words, or the identifier itself." : undefined,
+				results: hits,
+			})
+		}
+
 		case "list_versions":
 			return text((await asset(env, "/api/versions.json", origin)) ?? { error: "unavailable" })
 
