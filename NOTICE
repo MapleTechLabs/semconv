@@ -19,3 +19,8 @@ anything other than Maple.
 This project is not affiliated with, endorsed by, or sponsored by the
 OpenTelemetry project, the Cloud Native Computing Foundation, or the Linux
 Foundation. "OpenTelemetry" is a trademark of the Linux Foundation.
+
+The site mark in `site/components/SemconvMark.astro` and `public/favicon.svg`
+is the "tag" glyph from the Nucleo Pixel Essential icon set, used under Maple
+Tech Labs' Nucleo licence. It is likewise NOT covered by the Apache License
+granted over this repository's source.
