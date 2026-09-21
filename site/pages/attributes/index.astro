@@ -54,7 +54,7 @@ const counts = {
 	wide
 >
 	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Attribute registry</h1>
+		<h1 class="page-title">Attribute registry</h1>
 		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
 	</div>
 	<p class="mt-2 mb-0 text-muted max-w-[68ch]">
@@ -71,12 +71,12 @@ const counts = {
 			placeholder="Filter by name, description or type…"
 			autocomplete="off"
 			spellcheck="false"
-			class="flex-1 min-w-[16rem] rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
+			class="flex-1 min-w-[16rem] field font-mono"
 		/>
 		<select
 			id="domain"
 			aria-label="Filter by domain"
-			class="rounded-md border border-rule bg-surface px-2.5 py-2 text-[13px] text-muted outline-none focus:border-rule-strong"
+			class="field px-2.5 text-[13px] text-muted"
 		>
 			<option value="all">All domains</option>
 			{DOMAINS.map((domain) => <option value={domain.slug}>{domain.title}</option>)}
@@ -94,7 +94,7 @@ const counts = {
 					<button
 						type="button"
 						data-filter={value}
-						class="filter-btn rounded-md border border-rule px-2.5 py-1.5 text-[13px] text-muted hover:text-ink data-[on]:border-rule-strong data-[on]:text-ink data-[on]:font-medium"
+						class="filter-btn chip-btn"
 						data-on={value === "all" ? "" : undefined}
 					>
 						{label}

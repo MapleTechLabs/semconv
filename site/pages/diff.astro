@@ -18,7 +18,7 @@ const defaults = Object.fromEntries(
 	title="Compare versions"
 	description="Diff any two releases of the OpenTelemetry semantic conventions, specification or OTLP: renames, deprecations, new requirements and wire changes between them."
 >
-	<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">Compare versions</h1>
+	<h1 class="page-title">Compare versions</h1>
 	<p class="mt-2 mb-0 text-muted max-w-[65ch]">
 		Upgrading across several releases at once? Pick the version you built against and the version you
 		are moving to.
@@ -31,26 +31,26 @@ const defaults = Object.fromEntries(
 		data-defaults={JSON.stringify(defaults)}
 	>
 		<label class="flex flex-col gap-1">
-			<span class="text-[11px] uppercase tracking-wide text-faint">Source</span>
+			<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">Source</span>
 			<select
 				id="source"
-				class="rounded-md border border-rule bg-surface px-3 py-2 text-[13.5px] outline-none focus:border-rule-strong"
+				class="field"
 			>
 				{SOURCES.map((id) => <option value={id}>{SOURCE_LABEL[id]}</option>)}
 			</select>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span class="text-[11px] uppercase tracking-wide text-faint">From</span>
+			<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">From</span>
 			<select
 				id="from"
-				class="rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
+				class="field font-mono"
 			></select>
 		</label>
 		<label class="flex flex-col gap-1">
-			<span class="text-[11px] uppercase tracking-wide text-faint">To</span>
+			<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">To</span>
 			<select
 				id="to"
-				class="rounded-md border border-rule bg-surface px-3 py-2 font-mono text-[13.5px] outline-none focus:border-rule-strong"
+				class="field font-mono"
 			></select>
 		</label>
 		<label class="flex items-center gap-2 pb-2.5 text-[13.5px] text-muted">
@@ -111,7 +111,7 @@ const defaults = Object.fromEntries(
 				: `<span class="font-mono text-[13.5px] font-medium break-all">${label}</span>`
 		return `<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
 			<span class="inline-block rounded px-1.5 py-px text-[11px] font-medium tracking-wide uppercase ${severityClass(change.severity)}">${kindLabel(change.kind)}</span>
-			<span class="text-[11px] uppercase tracking-wide text-faint">${change.entity}</span>
+			<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">${change.entity}</span>
 			${id}
 			<span class="text-muted text-[13.5px] basis-full sm:basis-auto min-w-0 [overflow-wrap:anywhere]">${inlineCode(change.detail)}</span>
 		</li>`

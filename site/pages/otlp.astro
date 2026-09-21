@@ -47,7 +47,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	wide
 >
 	<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">OTLP</h1>
+		<h1 class="page-title">OTLP</h1>
 		<span class="text-[13.5px] text-faint">as of v{snapshot.version}</span>
 	</div>
 	<p class="mt-2 mb-0 text-muted max-w-[68ch]">
@@ -87,7 +87,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	{
 		serverRules.length > 0 && (
 			<section class="mt-10">
-				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+				<h2 class="eyebrow">
 					Server obligations
 				</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[68ch]">
@@ -115,7 +115,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	}
 
 	<section class="mt-11">
-		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Wire definitions</h2>
+		<h2 class="eyebrow">Wire definitions</h2>
 
 		<div class="mt-4 flex flex-col gap-8">
 			{
@@ -126,7 +126,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 								{group.label}
 							</a>
 							{group.development && (
-								<Pill label="development" class="text-muted bg-rule/50" title="No compatibility promise" />
+								<Pill label="development" class="text-muted bg-elevated" title="No compatibility promise" />
 							)}
 						</h3>
 						<ul class="mt-1.5 m-0 list-none p-0">

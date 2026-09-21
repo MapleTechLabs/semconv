@@ -71,7 +71,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	</nav>
 
 	<div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-		<h1 class="m-0 text-[1.7rem] font-semibold tracking-[-0.02em]">{domain.title}</h1>
+		<h1 class="page-title">{domain.title}</h1>
 		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
 	</div>
 	<p class="mt-2 mb-0 text-muted max-w-[70ch]">{domain.blurb}</p>
@@ -105,7 +105,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	{
 		signalGroups.length > 0 && (
 			<section id="signals" class="mt-9">
-				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Signals</h2>
+				<h2 class="eyebrow">Signals</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
 					What this domain emits, and the attributes each one carries, most strongly required first. An
 					attribute marked <span class="text-breaking">*</span> is required on that signal;{" "}
@@ -125,7 +125,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 												{signal.name.replace(/^(span|event|entity)\./, "")}
 											</span>
 											{signal.spanKind && (
-												<span class="text-[11px] uppercase tracking-wide text-faint">{signal.spanKind}</span>
+												<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">{signal.spanKind}</span>
 											)}
 											<Pill
 												label={
@@ -170,7 +170,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	{
 		domain.metrics.length > 0 && (
 			<section id="metrics" class="mt-10">
-				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+				<h2 class="eyebrow">
 					Metrics <span class="font-mono normal-case tracking-normal">{domain.metrics.length}</span>
 				</h2>
 				<ul class="mt-2 m-0 list-none p-0">
@@ -197,7 +197,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	}
 
 	<section id="specification" class="mt-11">
-		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Specification</h2>
+		<h2 class="eyebrow">Specification</h2>
 
 		{
 			domain.governance.length > 0 && (
@@ -232,12 +232,12 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 								<div class="flex flex-wrap items-baseline gap-x-2.5">
 									<Pill
 										label={statement.level}
-										class={statement.level.startsWith("MUST") ? severityClass("notable") : "text-muted bg-rule/50"}
+										class={statement.level.startsWith("MUST") ? severityClass("notable") : "text-muted bg-elevated"}
 									/>
 									<a href={sectionUrl(section.path, section.anchor)} class="text-[12.5px] text-muted">
 										{section.title}
 									</a>
-									<span class="text-[11px] uppercase tracking-wide text-faint">{section.status}</span>
+									<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">{section.status}</span>
 								</div>
 								<p class="mt-1 mb-0 text-[13.5px] max-w-[80ch]" set:html={inlineCode(statement.text)} />
 							</li>
@@ -280,7 +280,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	</section>
 
 	<section id="attributes" class="mt-11">
-		<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">
+		<h2 class="eyebrow">
 			Attributes <span class="font-mono normal-case tracking-normal">{domain.attributes.length}</span>
 		</h2>
 		<div class="mt-4 flex flex-col gap-7">
@@ -331,7 +331,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	{
 		domain.changes.length > 0 && (
 			<section id="changes" class="mt-11">
-				<h2 class="text-[11px] uppercase tracking-[0.12em] text-faint font-semibold m-0">Recent changes</h2>
+				<h2 class="eyebrow">Recent changes</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted">
 					Breaking and notable changes to this domain across the last{" "}
 					{Math.min(6, data.semconv.diffs.length)} semantic-conventions releases.
