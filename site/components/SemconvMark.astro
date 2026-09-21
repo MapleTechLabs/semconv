@@ -1,12 +1,7 @@
 ---
 /**
- * The site's own mark: the `tag` glyph from the Nucleo Pixel Essential set,
- * the pixel vocabulary Maple's product and landing use for one-glyph-per-
- * surface marks. An attribute is a tag, which is as literal as a registry's
- * logo should be. 24-grid, 2px square-cap strokes, dot corners, currentColor.
- *
- * The glyph is licensed to Maple through Nucleo and is not part of this
- * repository's Apache-2.0 grant - see NOTICE.
+ * The site's own mark: the diamond it launched with, drawn as a stroke so it
+ * holds its weight at any size and takes the accent from its surroundings.
  */
 interface Props {
 	class?: string
@@ -19,24 +14,10 @@ const { class: cls = "" } = Astro.props
 	fill="none"
 	stroke="currentColor"
 	stroke-width="2"
-	stroke-linecap="square"
+	stroke-linejoin="round"
 	role="img"
 	aria-label="semconv.com"
 	class:list={["inline-block shrink-0", cls]}
 >
-	<path d="M7.5 7.5L7.5 7.49" stroke-width="3" />
-	<path d="M16 20.01V20" />
-	<path d="M11 20.01V20" />
-	<path d="M9 18.01V18" />
-	<path d="M7 16.01V16" />
-	<path d="M5 14.01V14" />
-	<path d="M18 18.01V18" />
-	<path d="M20 16.01V16" />
-	<path d="M20 11.01V11" />
-	<path d="M18 9.01V9" />
-	<path d="M16 7.01V7" />
-	<path d="M14 5.01V5" />
-	<path d="M22 14V13" />
-	<path d="M14 22H13" />
-	<path d="M3 12V3H12" />
+	<path d="M12 3l9 9-9 9-9-9z" />
 </svg>
