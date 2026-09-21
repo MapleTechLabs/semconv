@@ -43,7 +43,7 @@ const shortId = (change: Change) => {
 			return (
 				<li class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-b border-rule py-2 last:border-0">
 					<Pill label={kindLabel(change.kind)} class={severityClass(change.severity)} />
-					<span class="text-[11px] uppercase tracking-wide text-faint">{change.entity}</span>
+					<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">{change.entity}</span>
 					{change.entity === "attribute" && linkable.has(change.id) ? (
 						<a href={attributeHref(change.id)} class="font-mono text-[13.5px] font-medium break-all">
 							{change.id}

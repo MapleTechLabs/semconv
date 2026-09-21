@@ -1,0 +1,23 @@
+---
+/**
+ * The site's own mark: the diamond it launched with, drawn as a stroke so it
+ * holds its weight at any size and takes the accent from its surroundings.
+ */
+interface Props {
+	class?: string
+}
+const { class: cls = "" } = Astro.props
+---
+
+<svg
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-width="2"
+	stroke-linejoin="round"
+	role="img"
+	aria-label="semconv.com"
+	class:list={["inline-block shrink-0", cls]}
+>
+	<path d="M12 3l9 9-9 9-9-9z" />
+</svg>

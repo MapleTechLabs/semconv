@@ -33,7 +33,7 @@ export function inlineCode(text: string): string {
 			if (!url.startsWith("http")) return label
 			return `<a href="${url}">${label}</a>`
 		})
-		.replace(/`([^`]+)`/g, '<code class="font-mono text-[0.92em] px-1 py-px rounded bg-rule/50">$1</code>')
+		.replace(/`([^`]+)`/g, '<code class="code-chip">$1</code>')
 }
 
 export const STABILITY_LABEL: Record<string, string> = {
@@ -53,7 +53,7 @@ export function stabilityClass(stability: Stability, deprecated?: boolean): stri
 		case "release_candidate":
 			return "text-rc bg-rc-bg"
 		default:
-			return "text-muted bg-rule/50"
+			return "text-muted bg-elevated"
 	}
 }
 
@@ -70,7 +70,7 @@ export function severityClass(severity: Severity): string {
 		case "notable":
 			return "text-notable bg-notable-bg"
 		default:
-			return "text-muted bg-rule/50"
+			return "text-muted bg-elevated"
 	}
 }
 
