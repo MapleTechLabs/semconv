@@ -29,7 +29,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-route={Astro.routePattern}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -41,6 +41,37 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 		<link rel="canonical" href={new URL(path, Astro.site)} />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="alternate" type="application/rss+xml" title={`${SITE.name} — all changes`} href="/feed.xml" />
+		<script>
+			import "../lib/maple.ts" // first: starts the SDK before anything else runs
+			import { MapleBrowser } from "@maple-dev/browser"
+			import { endNavigation, startNavigation, traced } from "../lib/tracing.ts"
+
+			// The route template the server rendered into <html data-route>, like /attributes/[id]
+			const template = () => document.documentElement.dataset["route"]
+
+			// Every document load: the first one, and each navigation without <ClientRouter />
+			startNavigation(location.pathname)
+			addEventListener("load", () => endNavigation(template()))
+
+			// Navigations handled by <ClientRouter />, if the site ever adds it
+			document.addEventListener("astro:before-preparation", (event) => {
+				startNavigation(event.to.pathname)
+				const load = event.loader
+				event.loader = async () => {
+					// The request for the next page's HTML
+					await traced("load page", load)
+					// Astro falls back to a full page load, which gets its own pageload span
+					if (event.defaultPrevented && !event.signal.aborted) endNavigation()
+				}
+			})
+			document.addEventListener("astro:page-load", () => endNavigation(template()))
+
+			// An island whose code failed to load: Astro catches the error and only logs it
+			document.addEventListener("astro:hydration-error", (event) => {
+				const { error } = (event as CustomEvent<{ error: unknown }>).detail
+				MapleBrowser.captureException(error, { name: "astro.hydration_error" })
+			})
+		</script>
 	</head>
 	<body class="min-h-screen antialiased">
 		<a
