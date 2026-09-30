@@ -1,6 +1,54 @@
 {
-	"generatedAt": "2026-09-01T00:13:46Z",
+	"generatedAt": "2026-09-29T18:12:41Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "771e321",
+			"version": "2026-09-29",
+			"publishedAt": "2026-09-29T18:12:41Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/771e3210f7518694666834f7243573b8018c7a4f",
+			"body": "Add gen_ai.skill.* attributes to the execute tool span (#498)"
+		},
+		{
+			"source": "proto",
+			"tag": "v1.11.1",
+			"version": "1.11.1",
+			"publishedAt": "2026-09-29T08:46:40Z",
+			"url": "https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v1.11.1",
+			"body": "### Changed\r\n\r\n- docs: clarify UTF-8 handling requirements. [#845](https://github.com/open-telemetry/opentelemetry-proto/pull/845)\r\n- examples: update attribute examples to use the latest semantic conventions. [#853](https://github.com/open-telemetry/opentelemetry-proto/pull/853)\r\n- all: document the version in which every protobuf field was introduced and require `since <version>` comments for new fields. [#854](https://github.com/open-telemetry/opentelemetry-proto/pull/854)\r\n\r\n### Fixed\r\n\r\n- openapi: Update OpenAPI generation to use integer-based enums. [#841](https://github.com/open-telemetry/opentelemetry-proto/pull/841)\r\n- docs: clarify that OTLP JSON timestamps are integer values and not RFC 3339 strings. [#855](https://github.com/open-telemetry/opentelemetry-proto/pull/855)\r\n\r\n## What's Changed\r\n* chore(deps): update github/codeql-action action to v4.37.3 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/831\r\n* docs: replace deprecated godoc.org links with pkg.go.dev by @vitorvasc in https://github.com/open-telemetry/opentelemetry-proto/pull/832\r\n* chore(deps): update ossf/scorecard-action action to v2.4.4 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/833\r\n* chore(deps): update davidanson/markdownlint-cli2 docker tag to v0.23.2 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/835\r\n* chore(deps): update github/codeql-action action to v4.37.4 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/836\r\n* Fixes to build for latest docker image of protobuf tools. by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/834\r\n* chore(deps): pin dependencies by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/837\r\n* chore(deps): update github/codeql-action action to v4.37.5 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/839\r\n* Remove BCR publishing by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/838\r\n* chore(deps): lock file maintenance by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/840\r\n* chore(deps): update github/codeql-action action to v4.37.6 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/842\r\n* chore(deps): update bufbuild/buf docker tag to v1.72.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/843\r\n* Update OpenAPI generation to use int based enums. by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/841\r\n* chore(deps): update github/codeql-action action to v4.37.7 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/844\r\n* ci: use shared OSSF Scorecard workflow by @opentelemetrybot in https://github.com/open-telemetry/opentelemetry-proto/pull/846\r\n* ci: add shared security scanning workflow by @opentelemetrybot in https://github.com/open-telemetry/opentelemetry-proto/pull/847\r\n* chore(deps): update github/codeql-action action to v4.37.8 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/850\r\n* chore(deps): update open-telemetry/shared-workflows action to v0.10.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/851\r\n* docs: fix lychee link failure for slack channel by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/849\r\n* Add special note about UTF-8 handling to help impelmentors. by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/845\r\n* chore(deps): update github/codeql-action action to v4.37.9 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/852\r\n* Move attribute examples to latest semconv. by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/853\r\n* chore(deps): update open-telemetry/shared-workflows action to v0.12.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/856\r\n* Fixes #460 - Add note that Timestamps are not RFC 3339 compatible in JSON by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/855\r\n* Add `since <version>` requirement to new proto fields and backfill by @jsuereth in https://github.com/open-telemetry/opentelemetry-proto/pull/854\r\n* chore(deps): update open-telemetry/shared-workflows action to v0.13.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/858\r\n* chore(deps): update bufbuild/buf docker tag to v1.73.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/861\r\n* chore(deps): update github/codeql-action action to v4.38.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/862\r\n* docs: add missing Unreleased changelog entries by @pellared in https://github.com/open-telemetry/opentelemetry-proto/pull/866\r\n* chore(deps): update open-telemetry/shared-workflows action to v0.16.0 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/868\r\n* chore(deps): update all patch versions by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/867\r\n* chore(deps): update github/codeql-action action to v4.38.2 by @renovate[bot] in https://github.com/open-telemetry/opentelemetry-proto/pull/871\r\n* Fix typo in metrics.proto comment by @thomasqueirozb in https://github.com/open-telemetry/opentelemetry-proto/pull/872\r\n* prepare 1.11.1 release by @pellared in https://github.com/open-telemetry/opentelemetry-proto/pull/870\r\n\r\n## New Contributors\r\n* @vitorvasc made their first contribution in https://github.com/open-telemetry/opentelemetry-proto/pull/832\r\n* @thomasqueirozb made their first contribution in https://github.com/open-telemetry/opentelemetry-proto/pull/872\r\n\r\n**Full Changelog**: https://github.com/open-telemetry/opentelemetry-proto/compare/v1.11.0...v1.11.1"
+		},
+		{
+			"source": "genai",
+			"tag": "8ffdf56",
+			"version": "2026-09-22",
+			"publishedAt": "2026-09-22T06:40:29Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/8ffdf568e1b4391a99adb081db16e8102e36918e",
+			"body": "Fix usage metrics to provide meaningful aggregation and break down by modality, reasoning, cache usage (#374)"
+		},
+		{
+			"source": "genai",
+			"tag": "be23fcc",
+			"version": "2026-09-16",
+			"publishedAt": "2026-09-16T00:36:37Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/be23fcc250f72e6f740c96d05fa6f12fbee3d71a",
+			"body": "Allow conversation ID on tool execution spans (#518)"
+		},
+		{
+			"source": "spec",
+			"tag": "v1.61.0",
+			"version": "1.61.0",
+			"publishedAt": "2026-09-14T14:53:49Z",
+			"url": "https://github.com/open-telemetry/opentelemetry-specification/releases/tag/v1.61.0",
+			"body": "### Context\r\n\r\n- Recommend instead of require global propagators.\r\n  ([#5294](https://github.com/open-telemetry/opentelemetry-specification/pull/5294))\r\n\r\n### Metrics\r\n\r\n- Add `view_matching_mode` parameter to `MeterProvider` to support composable View matching.\r\n  ([#5173](https://github.com/open-telemetry/opentelemetry-specification/pull/5173))\r\n- Clarify `maxExportBatchSize` behavior, timeouts, and error handling for\r\n  Periodic exporting MetricReader.\r\n  ([#5265](https://github.com/open-telemetry/opentelemetry-specification/pull/5265))\r\n- Mark `maxExportBatchSize` on Periodic exporting MetricReader as stable.\r\n  ([#5291](https://github.com/open-telemetry/opentelemetry-specification/pull/5291))\r\n\r\n### Resource\r\n\r\n- Allow the named `service` resource detector (used via declarative config or explicit detector configuration) to fall back to\r\n  platform-specific sources when `OTEL_SERVICE_NAME` is not set.\r\n  ([#5280](https://github.com/open-telemetry/opentelemetry-specification/pull/5280))\r\n\r\n### Common\r\n\r\n- Add `AttributeValueDepthLimit` for nested array and map attribute values.\r\n  ([#5186](https://github.com/open-telemetry/opentelemetry-specification/pull/5186))\r\n- Remove requirement for attribute ordering from compliance matrix.\r\n  ([#5205](https://github.com/open-telemetry/opentelemetry-specification/pull/5205))\r\n\r\n### Compatibility\r\n\r\n- Stabilize content negotiation section for the Prometheus exporter.\r\n  ([#5136](https://github.com/open-telemetry/opentelemetry-specification/pull/5136))\r\n- Update the OpenTelemetry Exponential Histogram to Prometheus Native Histogram\r\n  with standard (exponential) schema transformation.\r\n  ([#5125](https://github.com/open-telemetry/opentelemetry-specification/pull/5125))\r\n- Stabilize `resource_constant_labels` configuration for the Prometheus exporter.\r\n  ([#5130](https://github.com/open-telemetry/opentelemetry-specification/pull/5130))\r\n\r\n## New Contributors\r\n* @aryansk made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5260\r\n* @mmanciop made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5280\r\n* @herin049 made their first contribution in https://github.com/open-telemetry/opentelemetry-specification/pull/5190\r\n"
+		},
+		{
+			"source": "genai",
+			"tag": "b06f7a2",
+			"version": "2026-09-10",
+			"publishedAt": "2026-09-10T02:21:00Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/b06f7a2c840ceeacd8478acd3443e697ce390f96",
+			"body": "Mark gen_ai.agent.name as sampling-relevant on execute_tool and plan spans (#495)"
+		},
 		{
 			"source": "genai",
 			"tag": "5ca9052",
