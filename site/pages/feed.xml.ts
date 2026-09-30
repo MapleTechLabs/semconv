@@ -41,7 +41,7 @@ export const GET: APIRoute = async ({ site }) => {
 	const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
-	<title>${SITE.name} — ${SITE.tagline}</title>
+	<title>${SITE.name}: ${SITE.tagline}</title>
 	<link>${origin}</link>
 	<description>${escape(SITE.description)}</description>
 	<language>en</language>

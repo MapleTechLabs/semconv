@@ -79,56 +79,62 @@
 	}
 }
 
-html {
-	background: var(--color-paper);
-	color: var(--color-ink);
-	font-family: var(--font-sans);
-	-webkit-font-smoothing: antialiased;
-	scroll-behavior: smooth;
-}
-
-body {
-	margin: 0;
-	font-size: 14.5px;
-	line-height: 1.6;
-}
-
 /*
- * Identifiers are the site's real content and stay ink; amber is for the link
- * in a sentence, the way Maple's docs set prose links. Hover brings any link
- * up to amber so the affordance is the same everywhere.
+ * Element defaults sit in the base layer so a utility class on the element
+ * (a button-styled link, a muted nav link) always wins over them.
  */
-a {
-	color: inherit;
-	text-decoration-color: var(--color-rule-strong);
-	text-underline-offset: 3px;
-	transition:
-		color 120ms ease,
-		text-decoration-color 120ms ease;
-}
+@layer base {
+	html {
+		background: var(--color-paper);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+		scroll-behavior: smooth;
+	}
 
-a:hover {
-	color: var(--color-primary);
-	text-decoration-color: currentColor;
-}
+	body {
+		margin: 0;
+		font-size: 14.5px;
+		line-height: 1.6;
+	}
 
-p a {
-	color: var(--color-primary);
-	text-decoration-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
-}
+	/*
+	 * Identifiers are the site's real content and stay ink; amber is for the link
+	 * in a sentence, the way Maple's docs set prose links. Hover brings any link
+	 * up to amber so the affordance is the same everywhere.
+	 */
+	a {
+		color: inherit;
+		text-decoration-color: var(--color-rule-strong);
+		text-underline-offset: 3px;
+		transition:
+			color 120ms ease,
+			text-decoration-color 120ms ease;
+	}
 
-p a:hover {
-	color: var(--color-ink);
-	text-decoration-color: currentColor;
-}
+	a:hover {
+		color: var(--color-primary);
+		text-decoration-color: currentColor;
+	}
 
-::selection {
-	background: color-mix(in oklab, var(--color-primary) 28%, transparent);
-}
+	p a {
+		color: var(--color-primary);
+		text-decoration-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+	}
 
-:focus-visible {
-	outline: 2px solid var(--color-primary);
-	outline-offset: 2px;
+	p a:hover {
+		color: var(--color-ink);
+		text-decoration-color: currentColor;
+	}
+
+	::selection {
+		background: color-mix(in oklab, var(--color-primary) 28%, transparent);
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
 }
 
 /* Anchored headings should not hide under the sticky header. */
@@ -149,6 +155,11 @@ p a:hover {
 /* Page title: proportional, tight, one weight up from body. */
 @utility page-title {
 	@apply m-0 text-[1.65rem] leading-[1.2] font-semibold tracking-[-0.02em];
+}
+
+/* Section heading on the home page. */
+@utility section-title {
+	@apply m-0 text-[1.6rem] leading-tight font-semibold tracking-[-0.02em];
 }
 
 /* Text field: 36px tall, 8px radius, ring on focus. */
@@ -178,6 +189,11 @@ p a:hover {
 /* Inline code reads as a token, not a link. */
 @utility code-chip {
 	@apply rounded bg-elevated px-1.5 py-0.5 font-mono text-[0.9em] text-ink;
+}
+
+/* Copy button pinned to the corner of a code block. */
+@utility copy-btn {
+	@apply cursor-pointer rounded-[5px] border border-rule bg-surface px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-muted transition-colors hover:border-rule-strong hover:text-ink;
 }
 
 /* Search-term highlight: a tint, never a colour of its own. */

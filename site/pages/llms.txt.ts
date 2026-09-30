@@ -98,7 +98,8 @@ Setup for Claude Code, Codex, Cursor and VS Code, with example prompts: ${origin
 
 ## Pages
 
-- ${origin}/ - release history across all three sources, newest first
+- ${origin}/ - overview: an attribute-name checker, recent releases and the topics
+- ${origin}/changes - release history across all sources, newest first
 - ${origin}/domains - the conventions by topic: databases, HTTP, messaging, Kubernetes, GenAI, ...
 - ${origin}/domains/{slug} - one topic in full: its attributes, metrics, spans, events and the
   specification requirements that govern them

@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Source of public/og.png. Render: chrome --headless=new --hide-scrollbars --window-size=1200,630 --screenshot=public/og.png tools/og/og.html --><html><head><meta charset="utf-8"><style>
+@font-face{font-family:G;src:url(../../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2);font-weight:100 900}
+@font-face{font-family:GM;src:url(../../node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2);font-weight:100 900}
+html,body{margin:0}
+body{width:1200px;height:630px;background:oklch(0.207 0.008 67);color:oklch(0.91 0.016 74);font-family:G;box-sizing:border-box;padding:72px 80px;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:14px;font-size:28px;font-weight:600;letter-spacing:-0.01em}
+.top svg{width:30px;height:30px;color:oklch(0.714 0.154 59)}
+.row{display:flex;gap:64px;margin-top:auto;align-items:flex-end}
+h1{margin:0;font-size:68px;line-height:1.04;font-weight:600;letter-spacing:-0.035em;max-width:14ch}
+.list{border:1px solid oklch(0.34 0.014 67);border-radius:16px;width:390px;flex-shrink:0;font-family:GM}
+.item{padding:16px 22px;border-top:1px solid oklch(0.268 0.012 67)}
+.item:first-child{border-top:0}
+.old{font-size:19px;color:oklch(0.49 0.018 70);text-decoration:line-through;text-decoration-color:oklch(0.34 0.014 67)}
+.new{font-size:21px;margin-top:4px;font-weight:500}
+.foot{margin-top:44px;font-size:20px;color:oklch(0.603 0.023 72);display:flex;justify-content:space-between}
+</style></head><body>
+<div class="top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 9-9 9-9-9z"/></svg>semconv.com</div>
+<div class="row">
+<h1>Every rename, new rule and wire change in OpenTelemetry</h1>
+<div class="list">
+<div class="item"><div class="old">http.status_code</div><div class="new">http.response.status_code</div></div>
+<div class="item"><div class="old">db.statement</div><div class="new">db.query.text</div></div>
+<div class="item"><div class="old">http.method</div><div class="new">http.request.method</div></div>
+</div></div>
+<div class="foot"><span>Conventions, specification and OTLP, diffed at every release</span><span>Built by Maple</span></div>
+</body></html>

@@ -1,0 +1,107 @@
+---
+import { SOURCE_LABEL, SOURCES, UNRELEASED, type Catalog } from "../../src/model/catalog.ts"
+import { versionLabel } from "../lib/format.ts"
+
+/**
+ * Every tracked release on one time axis, one lane per repository. A bar's
+ * height is its breaking plus notable changes (square-root scaled, so one
+ * 128-change release does not flatten the rest); the red cap is the breaking
+ * share. Each bar links to that release.
+ */
+interface Props {
+	data: Catalog
+}
+const { data } = Astro.props
+
+const entries = data.feed.filter((entry) => entry.publishedAt)
+const times = entries.map((entry) => Date.parse(entry.publishedAt))
+const start = new Date(Math.min(...times))
+start.setUTCDate(1)
+const end = Date.now()
+const span = end - start.getTime()
+const x = (iso: string) => ((Date.parse(iso) - start.getTime()) / span) * 100
+
+const peak = Math.max(...entries.map((e) => e.diff.counts.breaking + e.diff.counts.notable))
+const height = (n: number) => (n === 0 ? 6 : 12 + (Math.sqrt(n) / Math.sqrt(peak)) * 88)
+
+const lanes = SOURCES.map((id) => ({
+	id,
+	label: SOURCE_LABEL[id],
+	bars: entries
+		.filter((e) => e.source === id)
+		.map((e) => {
+			const { breaking, notable } = e.diff.counts
+			const total = breaking + notable
+			return {
+				href: `/releases/${id}/${e.version}`,
+				left: x(e.publishedAt),
+				height: height(total),
+				breakingShare: total === 0 ? 0 : breaking / total,
+				label: `${SOURCE_LABEL[id]} ${UNRELEASED[id] ? e.version : versionLabel(e.version)}: ${breaking} breaking, ${notable} notable`,
+			}
+		}),
+}))
+
+/** A tick every quarter, labelled with month and year. */
+const ticks: { left: number; label: string }[] = []
+for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth() + 3)) {
+	ticks.push({
+		left: x(d.toISOString()),
+		label: d.toLocaleDateString("en", { month: "short", year: "numeric", timeZone: "UTC" }),
+	})
+}
+---
+
+<figure class="m-0">
+	<div class="flex flex-col gap-px overflow-hidden rounded-xl border border-rule bg-rule">
+		{
+			lanes.map((lane) => (
+				<div class="grid grid-cols-[6.5rem_1fr] bg-paper sm:grid-cols-[10rem_1fr]">
+					<div class="flex items-end border-r border-rule px-3 pb-2 text-[12px] leading-tight text-muted sm:px-4 sm:text-[13px]">
+						{lane.label}
+					</div>
+					<div class="relative mx-3 h-16 sm:mx-4">
+						{ticks.map((tick) => (
+							<span class="absolute inset-y-0 w-px bg-rule/70" style={`left:${tick.left.toFixed(2)}%`} aria-hidden="true" />
+						))}
+						{lane.bars.map((bar) => (
+							<a
+								href={bar.href}
+								title={bar.label}
+								aria-label={bar.label}
+								class="group absolute bottom-0 flex w-2.5 -translate-x-1/2 justify-center"
+								style={`left:${bar.left.toFixed(2)}%;height:${bar.height.toFixed(1)}%`}
+							>
+								<span class="flex h-full w-1 flex-col rounded-t-[1px] bg-muted/60 transition-colors group-hover:bg-ink">
+									{bar.breakingShare > 0 && (
+										<span class="block w-full shrink-0 bg-breaking" style={`height:${Math.max(bar.breakingShare * 100, 18).toFixed(1)}%`} />
+									)}
+								</span>
+							</a>
+						))}
+					</div>
+				</div>
+			))
+		}
+		<div class="grid grid-cols-[6.5rem_1fr] bg-paper sm:grid-cols-[10rem_1fr]">
+			<div class="border-r border-rule"></div>
+			<div class="relative mx-3 h-7 sm:mx-4">
+				{
+					ticks.map((tick, i) => (
+						<span
+							class:list={["absolute top-1.5 font-mono text-[10.5px] whitespace-nowrap text-faint", i % 2 === 1 && "max-sm:hidden"]}
+							style={`left:${tick.left.toFixed(2)}%`}
+						>
+							{tick.label}
+						</span>
+					))
+				}
+			</div>
+		</div>
+	</div>
+	<figcaption class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-faint">
+		<span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-1 bg-muted/60"></span>Height: notable and breaking changes</span>
+		<span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-1 bg-breaking"></span>Breaking</span>
+		<span>Each bar opens that release.</span>
+	</figcaption>
+</figure>

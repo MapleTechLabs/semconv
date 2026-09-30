@@ -81,12 +81,14 @@ export const PREFIXES: Record<string, string> = {
 }
 
 export const STATIC_PAGES: readonly Entry[] = [
-	{ type: "page", id: "Changes", text: "Release history across all four sources.", url: "/", meta: "home" },
+	{ type: "page", id: "Home", text: "Check attribute names, recent releases, topics.", url: "/", meta: "home check names" },
+	{ type: "page", id: "Changes", text: "Release history across all four sources.", url: "/changes", meta: "releases feed" },
 	{ type: "page", id: "Domains", text: "The conventions by topic.", url: "/domains", meta: "" },
 	{ type: "page", id: "Registry", text: "Every attribute, grouped by namespace.", url: "/attributes", meta: "attributes" },
 	{ type: "page", id: "Spec", text: "The specification's requirements.", url: "/spec", meta: "specification" },
 	{ type: "page", id: "OTLP", text: "Wire definitions and protocol rules.", url: "/otlp", meta: "proto" },
 	{ type: "page", id: "Compare", text: "Diff any two releases.", url: "/diff", meta: "diff versions" },
+	{ type: "page", id: "Agents", text: "The MCP server, install snippets and the JSON API.", url: "/agents", meta: "mcp claude cursor codex llm" },
 	{ type: "page", id: "About", text: "How this site reads the sources.", url: "/about", meta: "" },
 ]
 

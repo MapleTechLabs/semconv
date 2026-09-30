@@ -16,7 +16,7 @@ interface Props {
 const { title, description, wide = false } = Astro.props
 const path = Astro.url.pathname
 const nav = [
-	{ href: "/", label: "Changes" },
+	{ href: "/changes", label: "Changes" },
 	{ href: "/domains", label: "Domains" },
 	{ href: "/attributes", label: "Registry" },
 	{ href: "/spec", label: "Spec" },
@@ -25,7 +25,7 @@ const nav = [
 	{ href: "/agents", label: "Agents" },
 	{ href: "/about", label: "About" },
 ]
-const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href))
+const isActive = (href: string) => path.startsWith(href)
 ---
 
 <!doctype html>
@@ -38,9 +38,18 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content={SITE.name} />
+		<meta property="og:url" content={new URL(path, Astro.site)} />
+		<meta property="og:image" content={new URL("/og.png", Astro.site)} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={new URL("/og.png", Astro.site)} />
 		<link rel="canonical" href={new URL(path, Astro.site)} />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<link rel="alternate" type="application/rss+xml" title={`${SITE.name} — all changes`} href="/feed.xml" />
+		<link rel="alternate" type="application/rss+xml" title={`${SITE.name}: all changes`} href="/feed.xml" />
 	</head>
 	<body class="min-h-screen antialiased">
 		<a
@@ -160,6 +169,22 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 		</footer>
 	</body>
 </html>
+
+<script>
+	// One handler for every copy button on any page.
+	document.addEventListener("click", async (event) => {
+		const button = (event.target as Element | null)?.closest<HTMLButtonElement>(".copy-btn")
+		if (!button) return
+		const done = (label: string) => {
+			button.textContent = label
+			setTimeout(() => (button.textContent = "Copy"), 1200)
+		}
+		await navigator.clipboard.writeText(button.dataset["copy"] ?? "").then(
+			() => done("Copied"),
+			() => done("Select it"),
+		)
+	})
+</script>
 
 <style>
 	/* The phone nav strip scrolls sideways; a scrollbar would only add a rule. */

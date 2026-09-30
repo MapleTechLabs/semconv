@@ -1,189 +1,380 @@
 ---
-import ChangeList from "../components/ChangeList.astro"
+import InstallTabs from "../components/InstallTabs.astro"
 import Pill from "../components/Pill.astro"
+import ReleaseActivity from "../components/ReleaseActivity.astro"
+import ToolExamples from "../components/ToolExamples.astro"
 import Shell from "../layouts/Shell.astro"
-import { catalog, SOURCE_LABEL, SOURCES, UNRELEASED } from "../../src/model/catalog.ts"
+import { catalog, SOURCE_LABEL, UNRELEASED } from "../../src/model/catalog.ts"
 import { buildDomains } from "../../src/model/domains.ts"
-import { formatDate, severityClass, versionLabel } from "../lib/format.ts"
+import { TOOLS } from "../../src/mcp/worker.ts"
+import { checkNames } from "../lib/check-names.ts"
+import { buildNameIndex } from "../lib/name-index.ts"
+import { attributeHref, formatDate, severityClass, versionLabel } from "../lib/format.ts"
 import { SITE } from "../lib/site.ts"
 
 const data = await catalog()
-const linkable = data.linkableAttributes
-
 const requirements = data.spec.latest.sections.reduce((n, section) => n + section.normative.length, 0)
+const searchable = data.attributes.length + data.genai.latest.attributes.length + data.metrics.length + requirements
 
-/**
- * Four separately-versioned repositories, which is the whole reason keeping up
- * is hard. Each card says where that source stands today.
- */
 const sourceCards = [
 	{
 		id: "semconv" as const,
 		href: "/attributes",
-		blurb: `${data.attributes.length} attributes, ${data.metrics.length} metrics. ${data.renames.size} have been renamed to something else.`,
+		blurb: `${data.attributes.length} attributes and ${data.metrics.length} metrics. ${data.renames.size} old names point at a successor.`,
 	},
 	{
 		id: "spec" as const,
 		href: "/spec",
-		blurb: `${data.spec.latest.documents.length} documents carrying ${requirements} MUST, SHOULD and MAY requirements.`,
+		blurb: `${data.spec.latest.documents.length} documents holding ${requirements} MUST, SHOULD and MAY rules.`,
 	},
 	{
 		id: "proto" as const,
 		href: "/otlp",
-		blurb: `${data.proto.latest.messages.length} wire definitions plus the protocol requirements every OTLP server is bound by.`,
+		blurb: `${data.proto.latest.messages.length} wire messages and the rules every OTLP server has to follow.`,
 	},
 	{
 		id: "genai" as const,
 		href: "/attributes?registry=genai",
-		blurb: `${data.genai.latest.attributes.length} attributes for LLM, agent and MCP instrumentation, split out of the conventions in v1.44.0.`,
+		blurb: `${data.genai.latest.attributes.length} attributes for LLMs, agents and MCP. Split out in v1.44.0.`,
 	},
 ].map((card) => {
 	const source = data.source(card.id)
 	return { ...card, version: source.latest.version, publishedAt: source.release(source.latest.version)?.publishedAt }
 })
 
+const nameIndex = buildNameIndex(data)
+const sampleNames = ["http.status_code", "db.statement", "service.name", "net.peer.name", "http.request.header.x-request-id", "app.cart.size"]
+const sampleVerdicts = checkNames(sampleNames, nameIndex)
+
+/** Renames people still ship, shown in the hero. Only ones the registry confirms. */
+const famousRenames = ["http.status_code", "db.statement", "net.peer.name", "http.method", "code.filepath", "db.system"]
+	.filter((id) => data.renames.has(id))
+	.map((id) => ({ from: id, to: data.renames.get(id) as string }))
+
+/** Upgrade preview: the oldest tracked conventions release against the newest. */
+const oldest = data.semconv.versions.at(-1) as string
+const newest = data.semconv.latest.version
+const upgrade = data.semconv.diff(oldest, newest)
+const upgradeHref = `/diff?source=semconv&from=${oldest}&to=${newest}`
+
+const recent = data.feed
+	.filter((entry) => !UNRELEASED[entry.source] || entry.diff.counts.breaking + entry.diff.counts.notable > 0)
+	.slice(0, 5)
+
 const domains = buildDomains(data).map((domain) => ({
 	slug: domain.slug,
 	title: domain.title,
 	attributes: domain.attributes.length,
-	signals: domain.metrics.length + domain.spans.length + domain.events.length + domain.entities.length,
 }))
+const maxDomain = Math.max(...domains.map((d) => d.attributes))
+/** Pads the last row of the three-column grid so no bare hairline shows. */
+const domainFill = (3 - (domains.length % 3)) % 3
 
-/**
- * An untagged source moves by commit rather than by release, so its editorial
- * churn — a reworded brief, a new example — is not front-page news, and forty
- * consecutive rows of it would bury every tagged release under the fold. Those
- * entries keep their own page and stay reachable from the neighbouring ones.
- */
-const feed = data.feed
-	.map((entry) => ({
-		...entry,
-		significant: entry.diff.changes.filter((c) => c.severity !== "informational"),
-	}))
-	.filter((entry) => !UNRELEASED[entry.source] || entry.significant.length > 0)
+const STATUS_LABEL: Record<string, string> = {
+	ok: "current",
+	template: "template",
+	renamed: "renamed",
+	deprecated: "deprecated",
+	unknown: "not in registry",
+}
+const STATUS_CLASS: Record<string, string> = {
+	ok: "text-stable bg-stable-bg",
+	template: "text-stable bg-stable-bg",
+	renamed: "text-breaking bg-breaking-bg",
+	deprecated: "text-notable bg-notable-bg",
+	unknown: "text-muted bg-elevated",
+}
 ---
 
 <Shell title={SITE.name} description={SITE.description}>
-	<section class="pb-10">
-		<h1 class="m-0 text-[2.25rem] leading-[1.1] font-semibold tracking-[-0.03em] max-w-[19ch]">
-			{SITE.tagline}
-		</h1>
-		<p class="mt-4 mb-0 max-w-[62ch] text-muted">
-			OpenTelemetry is three separately-versioned repositories, and none of them will tell you what
-			moved since you last looked. This reads all three at every release: which attributes were
-			renamed, which requirements appeared in a stable document, and which fields changed on the
-			wire.
-		</p>
+	<section class="grid grid-cols-1 gap-10 pb-12 lg:grid-cols-[1fr_22rem] lg:items-end">
+		<div>
+			<p class="eyebrow">Tracked at every release</p>
+			<h1 class="mt-3 mb-0 max-w-[20ch] text-[2.4rem] leading-[1.08] font-semibold tracking-[-0.035em] sm:text-[2.9rem]">
+				{SITE.tagline}
+			</h1>
+			<p class="mt-5 mb-0 max-w-[56ch] text-[15.5px] leading-relaxed text-muted">
+				Attributes get renamed. Stable documents gain new MUSTs. Fields change on the wire. This site
+				diffs the conventions, the specification and OTLP at every release, so you can check a name,
+				plan an upgrade, or let your agent look it up.
+			</p>
+			<div class="mt-7 flex flex-wrap gap-2.5">
+				<a
+					href="#check"
+					class="inline-flex h-10 items-center rounded-lg bg-ink px-4 text-sm font-medium text-paper no-underline transition-colors hover:bg-ink/85 hover:text-paper"
+				>
+					Check your attribute names
+				</a>
+				<a
+					href="/agents"
+					class="inline-flex h-10 items-center rounded-lg border border-rule px-4 text-sm font-medium text-ink no-underline transition-colors hover:border-rule-strong hover:bg-surface hover:text-ink"
+				>
+					Add it to your agent
+				</a>
+			</div>
+			<button
+				type="button"
+				data-palette-open
+				class="mt-4 flex h-11 w-full max-w-[30rem] cursor-pointer items-center gap-2.5 rounded-lg border border-rule bg-surface px-3.5 text-left text-[13.5px] text-faint transition-colors hover:border-rule-strong hover:text-muted"
+			>
+				<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+					<circle cx="11" cy="11" r="7" />
+					<path d="M20 20l-3.5-3.5" />
+				</svg>
+				<span class="flex-1 truncate">Search {searchable.toLocaleString("en")} attributes, metrics and spec rules</span>
+				<kbd class="font-mono text-[11px] text-faint" data-palette-kbd-hint>⌘K</kbd>
+			</button>
+		</div>
 
-		<div class="hairline-grid mt-8 sm:grid-cols-2 lg:grid-cols-4">
+		<aside class="rounded-xl border border-rule">
+			<p class="eyebrow border-b border-rule px-4 py-3">Old names still in the wild</p>
+			<ul class="m-0 list-none p-0">
+				{
+					famousRenames.map((r) => (
+						<li class="border-b border-rule last:border-0">
+							<a href={attributeHref(r.from)} class="block px-4 py-2.5 no-underline transition-colors hover:bg-surface">
+								<span class="block font-mono text-[12.5px] text-faint line-through decoration-rule-strong">{r.from}</span>
+								<span class="mt-0.5 block font-mono text-[13px] font-medium text-ink">{r.to}</span>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+		</aside>
+	</section>
+
+	<section>
+		<div class="hairline-grid sm:grid-cols-2 lg:grid-cols-4">
 			{
 				sourceCards.map((card) => (
-					<div class="hairline-cell">
-						<h2 class="m-0 text-[13.5px] font-semibold">
-							<a href={card.href} class="no-underline hover:underline">
-								{SOURCE_LABEL[card.id]}
-							</a>
-						</h2>
-						<p class="mt-2 mb-0 font-mono text-[1.25rem] leading-none font-medium tracking-tight">{versionLabel(card.version)}</p>
-						<p class="mt-1.5 mb-0 font-mono text-[11px] text-faint">
-							{UNRELEASED[card.id]
-								? "unreleased \u00b7 tracked from main"
-								: card.publishedAt && formatDate(card.publishedAt)}
-						</p>
-						<p class="mt-2 mb-0 text-[13px] text-muted">{card.blurb}</p>
-					</div>
+					<a href={card.href} class="hairline-cell block no-underline transition-colors hover:bg-surface hover:text-ink">
+						<span class="block text-[13px] text-muted">{SOURCE_LABEL[card.id]}</span>
+						<span class="mt-2 block font-mono text-[1.35rem] leading-none font-medium tracking-tight">
+							{UNRELEASED[card.id] ? card.version : versionLabel(card.version)}
+						</span>
+						<span class="mt-1.5 block font-mono text-[11px] text-faint">
+							{UNRELEASED[card.id] ? "unreleased, tracked from main" : card.publishedAt && formatDate(card.publishedAt)}
+						</span>
+						<span class="mt-3 block text-[13px] leading-relaxed text-muted">{card.blurb}</span>
+					</a>
 				))
 			}
 		</div>
 	</section>
 
-	<section class="mt-10">
-		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-			<h2 class="eyebrow">Browse by domain</h2>
-			<a href="/domains" class="text-[13px] text-muted no-underline hover:text-ink">All {domains.length} domains</a>
+	<section id="check" class="mt-20 border-t border-rule pt-12">
+		<div class="grid grid-cols-1 gap-8 lg:grid-cols-[18rem_1fr]">
+			<div>
+				<h2 class="section-title">Paste the keys your code emits</h2>
+				<p class="mt-3 mb-0 text-[14px] leading-relaxed text-muted">
+					One per line, or a whole block of code. Each key is checked against v{newest} and the GenAI
+					registry. Nothing leaves your browser.
+				</p>
+				<p class="mt-3 mb-0 text-[13px] leading-relaxed text-faint">
+					Your agent gets the same answer from <code class="code-chip">check_attribute_names</code>.
+				</p>
+			</div>
+
+			<div class="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-rule bg-rule md:grid-cols-2">
+				<label class="flex flex-col bg-paper">
+					<span class="sr-only">Attribute keys</span>
+					<textarea
+						id="check-input"
+						spellcheck="false"
+						autocomplete="off"
+						class="min-h-64 flex-1 resize-none bg-transparent p-4 font-mono text-[13px] leading-[1.9] text-ink outline-none placeholder:text-faint"
+						placeholder="http.status_code">{sampleNames.join("\n")}</textarea
+					>
+				</label>
+				<div class="bg-paper">
+					<ul id="check-output" class="m-0 list-none p-0" aria-live="polite">
+						{
+							sampleVerdicts.map((v) => (
+								<li class="border-b border-rule px-4 py-2.5 last:border-0">
+									<div class="flex items-baseline gap-2">
+										<Pill label={STATUS_LABEL[v.status] ?? v.status} class={STATUS_CLASS[v.status]} />
+										<span class="min-w-0 truncate font-mono text-[12.5px]">{v.name}</span>
+									</div>
+									{v.status === "renamed" && (
+										<p class="mt-1 mb-0 font-mono text-[12.5px] text-muted">
+											use <a href={attributeHref(v.replacement)} class="text-ink">{v.replacement}</a>
+										</p>
+									)}
+								</li>
+							))
+						}
+					</ul>
+				</div>
+			</div>
 		</div>
-		<p class="mt-2 mb-0 text-[13.5px] text-muted max-w-[62ch]">
-			The conventions ship as one flat registry. These pull a single topic together &mdash; its
-			attributes, its metrics, the spans that carry them, and the specification rules that bind them.
-			Or <a href="/search">search all four repositories</a> at once.
-		</p>
-		<ul class="mt-4 m-0 grid gap-x-6 gap-y-1.5 list-none p-0 sm:grid-cols-2 lg:grid-cols-3">
+		<script
+			type="application/json"
+			id="name-index"
+			data-labels={JSON.stringify(STATUS_LABEL)}
+			data-classes={JSON.stringify(STATUS_CLASS)}
+			set:html={JSON.stringify(nameIndex)}
+		/>
+	</section>
+
+	<section class="mt-20 border-t border-rule pt-12">
+		<div class="flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<h2 class="section-title">Releases land every few weeks</h2>
+				<p class="mt-3 mb-0 max-w-[60ch] text-[14px] leading-relaxed text-muted">
+					Every tracked release across the four repositories. Between v{oldest} and v{newest} alone, the
+					conventions made {upgrade.counts.breaking} breaking and {upgrade.counts.notable} notable changes.
+				</p>
+			</div>
+			<a href={upgradeHref} class="text-[13.5px] text-muted no-underline hover:text-ink">Compare two versions</a>
+		</div>
+
+		<div class="mt-8">
+			<ReleaseActivity data={data} />
+		</div>
+
+		<ul class="mt-8 m-0 list-none p-0">
 			{
-				domains.map((domain) => (
-					<li class="flex items-baseline gap-x-2 border-b border-rule py-1.5 text-[13.5px]">
-						<a href={`/domains/${domain.slug}`} class="no-underline hover:underline">
-							{domain.title}
+				recent.map((entry) => (
+					<li class="border-b border-rule last:border-0">
+						<a
+							href={`/releases/${entry.source}/${entry.version}`}
+							class="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-3 no-underline"
+						>
+							<span class="text-[14px] text-muted">{SOURCE_LABEL[entry.source]}</span>
+							<span class="font-mono text-[14px] font-medium text-ink">
+								{UNRELEASED[entry.source] ? entry.version : versionLabel(entry.version)}
+							</span>
+							<time class="text-[13px] text-faint" datetime={entry.publishedAt}>
+								{formatDate(entry.publishedAt)}
+							</time>
+							<span class="ml-auto flex gap-1.5">
+								{entry.diff.counts.breaking > 0 && (
+									<Pill label={`${entry.diff.counts.breaking} breaking`} class={severityClass("breaking")} />
+								)}
+								{entry.diff.counts.notable > 0 && (
+									<Pill label={`${entry.diff.counts.notable} notable`} class={severityClass("notable")} />
+								)}
+							</span>
 						</a>
-						<span class="ml-auto font-mono text-[12px] text-faint" title={`${domain.attributes} attributes, ${domain.signals} metrics and signals`}>
-							{domain.attributes}
-						</span>
 					</li>
 				))
 			}
 		</ul>
-	</section>
-
-	<section class="mt-12">
-		<h2 class="eyebrow">Release history</h2>
-
-		<div class="mt-5 flex flex-col gap-9">
-			{
-				feed.map(({ source, version, diff, release, significant }) => (
-					<article>
-						<header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-							<h3 class="m-0 text-[1.05rem] font-semibold tracking-tight">
-								<a href={`/releases/${source}/${version}`} class="no-underline hover:underline">
-									<span class="text-muted font-normal text-[0.9em]">{SOURCE_LABEL[source]}</span>{" "}
-									<span class="font-mono">{versionLabel(version)}</span>
-								</a>
-							</h3>
-							{release && (
-								<time class="text-[13px] text-faint" datetime={release.publishedAt}>
-									{formatDate(release.publishedAt)}
-								</time>
-							)}
-							<span class="flex gap-1.5 ml-auto">
-								{diff.counts.breaking > 0 && (
-									<Pill label={`${diff.counts.breaking} breaking`} class={severityClass("breaking")} />
-								)}
-								{diff.counts.notable > 0 && (
-									<Pill label={`${diff.counts.notable} notable`} class={severityClass("notable")} />
-								)}
-							</span>
-						</header>
-
-						{significant.length === 0 ? (
-							<p class="mt-2 mb-0 text-[13.5px] text-faint">
-								Editorial only &mdash; {diff.counts.informational} wording, example and guidance changes.
-							</p>
-						) : (
-							<div class="mt-2">
-								<ChangeList changes={significant.slice(0, 6)} linkable={linkable} />
-							</div>
-						)}
-
-						<p class="mt-2.5 mb-0 text-[13px] text-faint flex flex-wrap gap-x-4">
-							<a href={`/releases/${source}/${version}`} class="text-muted">
-								{significant.length > 6
-									? `All ${significant.length} notable changes`
-									: `Full diff from ${versionLabel(diff.from)}`}
-								{diff.counts.informational > 0 && ` + ${diff.counts.informational} editorial`}
-							</a>
-							{release && (
-								<a href={release.url}>{UNRELEASED[source] ? "Upstream commit" : "Upstream release notes"}</a>
-							)}
-						</p>
-					</article>
-				))
-			}
-		</div>
-
-		<p class="mt-10 mb-0 text-[13px] text-faint max-w-[62ch]">
-			History starts at {SOURCES.filter((id) => !UNRELEASED[id])
-				.map((id) => `${SOURCE_LABEL[id].toLowerCase()} ${versionLabel(data.source(id).versions.at(-1) as string)}`)
-				.join(", ")}. Going further back would mean diffing across schema and layout changes that would
-			report churn the projects never made. The GenAI conventions have never cut a release, so they are
-			tracked from their default branch and dated rather than versioned.
+		<p class="mt-4 mb-0 text-[13.5px]">
+			<a href="/changes" class="text-muted no-underline hover:text-ink">All releases and what changed in each</a>
 		</p>
 	</section>
+
+	<section class="mt-20 border-t border-rule pt-12">
+		<div class="grid grid-cols-1 gap-10 lg:grid-cols-2">
+			<div class="min-w-0">
+				<h2 class="section-title">Stop your agent guessing</h2>
+				<p class="mt-3 mb-0 max-w-[52ch] text-[14px] leading-relaxed text-muted">
+					A model's training data is months behind the registry. Everything here is also a public MCP
+					server with {TOOLS.length} read-only tools. No key, no account. Add it once and your agent can
+					check a name, diff two releases, or quote the spec with a link.
+				</p>
+				<div class="mt-6">
+					<InstallTabs />
+				</div>
+				<p class="mt-4 mb-0 text-[13.5px]">
+					<a href="/agents" class="text-muted no-underline hover:text-ink">Tools, example prompts and the JSON API</a>
+				</p>
+			</div>
+
+			<div class="min-w-0 self-start">
+				<ToolExamples />
+			</div>
+		</div>
+	</section>
+
+	<section class="mt-20 border-t border-rule pt-12">
+		<div class="flex flex-wrap items-end justify-between gap-4">
+			<div>
+				<h2 class="section-title">Browse by topic</h2>
+				<p class="mt-3 mb-0 max-w-[60ch] text-[14px] leading-relaxed text-muted">
+					The registry is one flat list. Each topic gathers its attributes, metrics and spans, plus the spec
+					rules that apply to them.
+				</p>
+			</div>
+			<a href="/domains" class="text-[13.5px] text-muted no-underline hover:text-ink">All {domains.length} topics</a>
+		</div>
+		<ul class="hairline-grid mt-8 m-0 list-none p-0 sm:grid-cols-2 lg:grid-cols-3">
+			{
+				domains.map((domain) => (
+					<li class="bg-paper">
+						<a
+							href={`/domains/${domain.slug}`}
+							class="block px-4 py-3.5 no-underline transition-colors hover:bg-surface hover:text-ink"
+						>
+							<span class="flex items-baseline justify-between gap-3">
+								<span class="text-[14px] font-medium">{domain.title}</span>
+								<span class="font-mono text-[12px] text-faint">{domain.attributes}</span>
+							</span>
+							<span class="mt-2.5 block h-1 overflow-hidden rounded-full bg-elevated">
+								<span
+									class="block h-full rounded-full bg-rule-strong"
+									style={`width:${Math.max((domain.attributes / maxDomain) * 100, 3).toFixed(1)}%`}
+								/>
+							</span>
+						</a>
+					</li>
+				))
+			}
+			{Array.from({ length: domainFill }, () => <li class="hidden bg-paper lg:block" aria-hidden="true" />)}
+		</ul>
+	</section>
 </Shell>
+
+<script>
+	import { checkNames, parseNames, type NameIndex } from "../lib/check-names.ts"
+
+	const input = document.querySelector<HTMLTextAreaElement>("#check-input")
+	const output = document.querySelector<HTMLUListElement>("#check-output")
+	const source = document.querySelector<HTMLElement>("#name-index")
+
+	if (input && output && source?.textContent) {
+		const index = JSON.parse(source.textContent) as NameIndex
+		const labels = JSON.parse(source.dataset["labels"] ?? "{}") as Record<string, string>
+		const classes = JSON.parse(source.dataset["classes"] ?? "{}") as Record<string, string>
+
+		const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string) => {
+			const node = document.createElement(tag)
+			node.className = className
+			if (text) node.textContent = text
+			return node
+		}
+
+		const render = () => {
+			const verdicts = checkNames(parseNames(input.value).slice(0, 200), index)
+			if (verdicts.length === 0) {
+				output.replaceChildren(el("li", "px-4 py-3 text-[13px] text-faint", "Paste keys like http.request.method to check them."))
+				return
+			}
+			output.replaceChildren(
+				...verdicts.map((v) => {
+					const li = el("li", "border-b border-rule px-4 py-2.5 last:border-0")
+					const row = el("div", "flex items-baseline gap-2")
+					row.append(
+						el(
+							"span",
+							`inline-flex h-[18px] shrink-0 items-center rounded-[4px] px-1.5 font-mono text-[10.5px] font-medium uppercase leading-none tracking-[0.06em] whitespace-nowrap ${classes[v.status] ?? ""}`,
+							labels[v.status] ?? v.status,
+						),
+						el("span", "min-w-0 truncate font-mono text-[12.5px]", v.name),
+					)
+					li.append(row)
+					if (v.status === "renamed") {
+						const link = el("a", "text-ink", v.replacement)
+						link.setAttribute("href", `/attributes/${encodeURIComponent(v.replacement)}`)
+						const line = el("p", "mt-1 mb-0 font-mono text-[12.5px] text-muted", "use ")
+						line.append(link)
+						li.append(line)
+					}
+					return li
+				}),
+			)
+		}
+		input.addEventListener("input", render)
+	}
+</script>

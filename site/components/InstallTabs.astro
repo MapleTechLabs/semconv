@@ -1,0 +1,78 @@
+---
+import { SITE } from "../lib/site.ts"
+
+/** One tab per client; the home page and /agents render the same list. */
+const mcp = `${SITE.origin}/mcp`
+
+const installs = [
+	{ id: "claude-code", label: "Claude Code", code: `claude mcp add --transport http semconv ${mcp}` },
+	{ id: "codex", label: "Codex", code: `codex mcp add semconv --url ${mcp}` },
+	{
+		id: "cursor",
+		label: "Cursor",
+		note: ".cursor/mcp.json",
+		code: `{\n  "mcpServers": {\n    "semconv": { "url": "${mcp}" }\n  }\n}`,
+	},
+	{
+		id: "vscode",
+		label: "VS Code",
+		note: ".vscode/mcp.json",
+		code: `{\n  "servers": {\n    "semconv": { "type": "http", "url": "${mcp}" }\n  }\n}`,
+	},
+	{
+		id: "generic",
+		label: "Other clients",
+		note: "Streamable HTTP, no auth, no session",
+		code: `{\n  "mcpServers": {\n    "semconv": { "type": "streamable-http", "url": "${mcp}" }\n  }\n}`,
+	},
+]
+---
+
+<div data-install-tabs>
+	<div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Client">
+		{
+			installs.map((install, i) => (
+				<button
+					type="button"
+					role="tab"
+					class="chip-btn"
+					data-tab={install.id}
+					data-on={i === 0 ? "" : undefined}
+					aria-selected={i === 0 ? "true" : "false"}
+				>
+					{install.label}
+				</button>
+			))
+		}
+	</div>
+	{
+		installs.map((install, i) => (
+			<div class="mt-3" data-panel={install.id} role="tabpanel" hidden={i !== 0}>
+				{install.note && <p class="m-0 mb-1.5 font-mono text-[11.5px] text-faint">{install.note}</p>}
+				<div class="flex items-start gap-2 rounded-lg border border-rule bg-elevated py-2 pr-2 pl-4">
+					<pre class="m-0 min-w-0 flex-1 overflow-x-auto py-1 font-mono text-[13px] leading-relaxed"><code>{install.code}</code></pre>
+					<button type="button" class="copy-btn mt-0.5 shrink-0" data-copy={install.code}>
+						Copy
+					</button>
+				</div>
+			</div>
+		))
+	}
+</div>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>("[data-install-tabs]")) {
+		const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-tab]"))
+		const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-panel]"))
+		for (const tab of tabs) {
+			tab.addEventListener("click", () => {
+				for (const other of tabs) {
+					const on = other === tab
+					other.toggleAttribute("data-on", on)
+					other.setAttribute("aria-selected", String(on))
+				}
+				for (const panel of panels) panel.hidden = panel.dataset["panel"] !== tab.dataset["tab"]
+			})
+		}
+	}
+</script>

@@ -6,7 +6,7 @@
 export const SITE = {
 	name: "semconv.com",
 	origin: "https://semconv.com",
-	tagline: "What changed in OpenTelemetry since you last looked",
+	tagline: "Every rename, new rule and wire change in OpenTelemetry",
 	description:
 		"A version-by-version record of the OpenTelemetry semantic conventions, specification and OTLP: which attributes were renamed, which requirements appeared in a stable document, and which fields changed on the wire.",
 	builder: "Maple",

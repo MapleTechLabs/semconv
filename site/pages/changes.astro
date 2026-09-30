@@ -1,0 +1,103 @@
+---
+import ChangeList from "../components/ChangeList.astro"
+import Pill from "../components/Pill.astro"
+import ReleaseActivity from "../components/ReleaseActivity.astro"
+import Shell from "../layouts/Shell.astro"
+import { catalog, SOURCE_LABEL, SOURCES, UNRELEASED } from "../../src/model/catalog.ts"
+import { formatDate, severityClass, versionLabel } from "../lib/format.ts"
+
+const data = await catalog()
+const linkable = data.linkableAttributes
+
+/**
+ * An untagged source moves by commit rather than by release, so its editorial
+ * churn (a reworded brief, a new example) is not front-page news, and forty
+ * consecutive rows of it would bury every tagged release under the fold. Those
+ * entries keep their own page and stay reachable from the neighbouring ones.
+ */
+const feed = data.feed
+	.map((entry) => ({
+		...entry,
+		significant: entry.diff.changes.filter((c) => c.severity !== "informational"),
+	}))
+	.filter((entry) => !UNRELEASED[entry.source] || entry.significant.length > 0)
+---
+
+<Shell
+	title="Changes"
+	description="Every release of the OpenTelemetry semantic conventions, specification, OTLP and GenAI conventions, newest first, with the breaking and notable changes in each."
+>
+	<p class="eyebrow">Changes</p>
+	<h1 class="page-title mt-2">Every release, newest first</h1>
+	<p class="mt-3 mb-0 max-w-[62ch] text-muted">
+		Four repositories, one feed. Each entry lists the changes that can break or surprise you, and
+		links to the full diff for the rest. Subscribe with <a href="/feed.xml">RSS</a>.
+	</p>
+
+	<div class="mt-8">
+		<ReleaseActivity data={data} />
+	</div>
+
+	<section class="mt-8">
+
+		<div class="mt-5 flex flex-col gap-9">
+			{
+				feed.map(({ source, version, diff, release, significant }) => (
+					<article>
+						<header class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+							<h3 class="m-0 text-[1.05rem] font-semibold tracking-tight">
+								<a href={`/releases/${source}/${version}`} class="no-underline hover:underline">
+									<span class="text-muted font-normal text-[0.9em]">{SOURCE_LABEL[source]}</span>{" "}
+									<span class="font-mono">{versionLabel(version)}</span>
+								</a>
+							</h3>
+							{release && (
+								<time class="text-[13px] text-faint" datetime={release.publishedAt}>
+									{formatDate(release.publishedAt)}
+								</time>
+							)}
+							<span class="flex gap-1.5 ml-auto">
+								{diff.counts.breaking > 0 && (
+									<Pill label={`${diff.counts.breaking} breaking`} class={severityClass("breaking")} />
+								)}
+								{diff.counts.notable > 0 && (
+									<Pill label={`${diff.counts.notable} notable`} class={severityClass("notable")} />
+								)}
+							</span>
+						</header>
+
+						{significant.length === 0 ? (
+							<p class="mt-2 mb-0 text-[13.5px] text-faint">
+								Editorial only: {diff.counts.informational} wording, example and guidance changes.
+							</p>
+						) : (
+							<div class="mt-2">
+								<ChangeList changes={significant.slice(0, 6)} linkable={linkable} />
+							</div>
+						)}
+
+						<p class="mt-2.5 mb-0 text-[13px] text-faint flex flex-wrap gap-x-4">
+							<a href={`/releases/${source}/${version}`} class="text-muted">
+								{significant.length > 6
+									? `All ${significant.length} notable changes`
+									: `Full diff from ${versionLabel(diff.from)}`}
+								{diff.counts.informational > 0 && ` + ${diff.counts.informational} editorial`}
+							</a>
+							{release && (
+								<a href={release.url}>{UNRELEASED[source] ? "Upstream commit" : "Upstream release notes"}</a>
+							)}
+						</p>
+					</article>
+				))
+			}
+		</div>
+
+		<p class="mt-10 mb-0 text-[13px] text-faint max-w-[62ch]">
+			History starts at {SOURCES.filter((id) => !UNRELEASED[id])
+				.map((id) => `${SOURCE_LABEL[id].toLowerCase()} ${versionLabel(data.source(id).versions.at(-1) as string)}`)
+				.join(", ")}. Going further back would mean diffing across schema and layout changes that would
+			report churn the projects never made. The GenAI conventions have never cut a release, so they are
+			tracked from their default branch and dated rather than versioned.
+		</p>
+	</section>
+</Shell>

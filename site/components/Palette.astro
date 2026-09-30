@@ -63,9 +63,9 @@
 	const input = document.getElementById("palette-input") as HTMLInputElement
 	const list = document.getElementById("palette-list") as HTMLElement
 	const trigger = document.querySelector<HTMLInputElement>("[data-palette-trigger]")
-	const kbd = document.querySelector<HTMLElement>("[data-palette-kbd]")
-
-	if (kbd && !/Mac|iPhone|iPad/.test(navigator.platform)) kbd.textContent = "Ctrl K"
+	if (!/Mac|iPhone|iPad/.test(navigator.platform)) {
+		for (const kbd of document.querySelectorAll<HTMLElement>("[data-palette-kbd], [data-palette-kbd-hint]")) kbd.textContent = "Ctrl K"
+	}
 
 	let entries: Indexed[] | null = null
 	let selected = 0
@@ -263,6 +263,10 @@
 			open()
 		})
 		trigger.addEventListener("click", () => open())
+	}
+
+	for (const button of document.querySelectorAll<HTMLElement>("[data-palette-open]")) {
+		button.addEventListener("click", () => open())
 	}
 
 	document.addEventListener("keydown", (event) => {

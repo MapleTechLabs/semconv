@@ -1,0 +1,167 @@
+---
+import Pill from "./Pill.astro"
+import { catalog, SOURCE_REPO } from "../../src/model/catalog.ts"
+import { checkNames } from "../lib/check-names.ts"
+import { attributeHref, severityClass } from "../lib/format.ts"
+import { buildNameIndex } from "../lib/name-index.ts"
+
+/**
+ * Three questions and what the MCP tools answer, computed from the same data
+ * at build time, so the picture of an agent session is real output rather than
+ * a mock. Tabs switch between them.
+ */
+const data = await catalog()
+
+const names = ["http.status_code", "db.statement", "service.name", "app.cart.size"]
+const verdicts = checkNames(names, buildNameIndex(data))
+
+const oldest = data.semconv.versions.at(-1) as string
+const newest = data.semconv.latest.version
+const dbRenames = data.semconv
+	.diff(oldest, newest)
+	.changes.filter((c) => c.entity === "attribute" && c.id.startsWith("db.") && c.kind === "renamed")
+const shownRenames = [...dbRenames].sort((a, b) => a.id.split(".").length - b.id.split(".").length).slice(0, 4)
+
+const specTag = data.spec.latest.tag
+const retries = data.spec.latest.sections
+	.flatMap((section) => section.normative)
+	.filter((n) => /retry/i.test(n.text) && n.section.includes("protocol/"))
+	.slice(0, 3)
+const upstream = (section: string) => {
+	const [path, anchor] = section.split("#")
+	return `${SOURCE_REPO.spec}/blob/${specTag}/${path}${anchor ? `#${anchor}` : ""}`
+}
+
+const VERDICT: Record<string, { label: string; cls: string }> = {
+	ok: { label: "current", cls: "text-stable bg-stable-bg" },
+	template: { label: "template", cls: "text-stable bg-stable-bg" },
+	renamed: { label: "renamed", cls: "text-breaking bg-breaking-bg" },
+	deprecated: { label: "deprecated", cls: "text-notable bg-notable-bg" },
+	unknown: { label: "not in registry", cls: "text-muted bg-elevated" },
+}
+
+const examples = [
+	{ id: "check", label: "Check names" },
+	{ id: "diff", label: "Plan an upgrade" },
+	{ id: "spec", label: "Cite the spec" },
+]
+---
+
+<figure class="m-0 min-w-0 overflow-hidden rounded-xl border border-rule" data-tool-examples>
+	<div class="flex gap-1 overflow-x-auto border-b border-rule px-2 py-2" role="tablist" aria-label="Example">
+		{
+			examples.map((ex, i) => (
+				<button
+					type="button"
+					role="tab"
+					class="chip-btn h-7 shrink-0 border-transparent px-2 text-[12.5px]"
+					data-tab={ex.id}
+					data-on={i === 0 ? "" : undefined}
+					aria-selected={i === 0 ? "true" : "false"}
+				>
+					{ex.label}
+				</button>
+			))
+		}
+	</div>
+
+	<div data-panel="check" role="tabpanel">
+		<div class="border-b border-rule px-4 py-3">
+			<p class="eyebrow">You</p>
+			<p class="mt-1.5 mb-0 text-[13.5px] text-ink">Are the attribute keys in this service still current?</p>
+		</div>
+		<div class="border-b border-rule bg-surface px-4 py-3">
+			<p class="eyebrow">Agent calls</p>
+			<p class="mt-1.5 mb-0 font-mono text-[12.5px] break-words text-muted">
+				check_attribute_names(names: [{names.map((n) => `"${n}"`).join(", ")}])
+			</p>
+		</div>
+		<ul class="m-0 list-none p-0">
+			{
+				verdicts.map((v) => (
+					<li class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-rule px-4 py-2.5 last:border-0">
+						<Pill label={VERDICT[v.status]?.label ?? v.status} class={VERDICT[v.status]?.cls} />
+						<span class="font-mono text-[12.5px]">{v.name}</span>
+						{v.status === "renamed" && (
+							<span class="font-mono text-[12.5px] text-muted">
+								use <a href={attributeHref(v.replacement)} class="text-ink">{v.replacement}</a>
+							</span>
+						)}
+					</li>
+				))
+			}
+		</ul>
+	</div>
+
+	<div data-panel="diff" role="tabpanel" hidden>
+		<div class="border-b border-rule px-4 py-3">
+			<p class="eyebrow">You</p>
+			<p class="mt-1.5 mb-0 text-[13.5px] text-ink">We built against v{oldest}. Which database attributes were renamed since?</p>
+		</div>
+		<div class="border-b border-rule bg-surface px-4 py-3">
+			<p class="eyebrow">Agent calls</p>
+			<p class="mt-1.5 mb-0 font-mono text-[12.5px] break-words text-muted">
+				diff_versions(source: "semconv", from: "{oldest}", to: "{newest}")
+			</p>
+		</div>
+		<ul class="m-0 list-none p-0">
+			{
+				shownRenames.map((c) => (
+					<li class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-rule px-4 py-2.5 last:border-0">
+						<Pill label="renamed" class={severityClass(c.severity)} />
+						<span class="font-mono text-[12.5px] text-faint line-through decoration-rule-strong">{c.id}</span>
+						<span class="font-mono text-[12.5px] text-ink">{c.renamedTo ?? c.to}</span>
+					</li>
+				))
+			}
+			<li class="px-4 py-2.5 text-[12.5px] text-faint">and {dbRenames.length - shownRenames.length} more</li>
+		</ul>
+	</div>
+
+	<div data-panel="spec" role="tabpanel" hidden>
+		<div class="border-b border-rule px-4 py-3">
+			<p class="eyebrow">You</p>
+			<p class="mt-1.5 mb-0 text-[13.5px] text-ink">What does the spec require when an export fails with a transient error?</p>
+		</div>
+		<div class="border-b border-rule bg-surface px-4 py-3">
+			<p class="eyebrow">Agent calls</p>
+			<p class="mt-1.5 mb-0 font-mono text-[12.5px] break-words text-muted">search_requirements(query: "retry", section: "protocol")</p>
+		</div>
+		<ul class="m-0 list-none p-0">
+			{
+				retries.map((n) => (
+					<li class="border-b border-rule px-4 py-2.5 last:border-0">
+						<div class="flex items-baseline gap-2">
+							<Pill label={n.level} class="text-ink bg-elevated" />
+							<a href={upstream(n.section)} class="min-w-0 truncate font-mono text-[11.5px] text-faint">
+								{n.section.replace(/^specification\//, "")}
+							</a>
+						</div>
+						<p class="mt-1 mb-0 text-[13px] leading-relaxed text-muted">{n.text.replace(/`/g, "")}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+
+	<figcaption class="border-t border-rule px-4 py-2.5 text-[12px] text-faint">
+		Real tool output, generated from this build's data.
+	</figcaption>
+</figure>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>("[data-tool-examples]")) {
+		const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-tab]"))
+		const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-panel]"))
+		for (const tab of tabs) {
+			tab.addEventListener("click", () => {
+				for (const other of tabs) {
+					const on = other === tab
+					other.toggleAttribute("data-on", on)
+					other.setAttribute("aria-selected", String(on))
+				}
+				for (const panel of panels) panel.hidden = panel.dataset["panel"] !== tab.dataset["tab"]
+			})
+		}
+	}
+</script>
