@@ -31,14 +31,17 @@ jobs:
 
       - name: Detect changes
         id: changed
+        # A new release is a new, untracked snapshot file, which `git diff`
+        # ignores; intent-to-add makes it show up as a change.
         run: |
+          git add --intent-to-add data
           if git diff --quiet -- data; then
             echo "any=false" >> "$GITHUB_OUTPUT"
           else
             echo "any=true" >> "$GITHUB_OUTPUT"
             # `v` only where there is a version to prefix: an untagged source is
             # dated, and `v2026-09-01` names a tag that does not exist.
-            echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed -E 's#^data/##; s#\.json\.gz$##; s#/([0-9]+\.[0-9]+)#  v\1#; s#/#  #' | paste -sd', ' -)" >> "$GITHUB_OUTPUT"
+            echo "versions=$(git diff --name-only -- data | grep '\.json\.gz$' | sed -E 's#^data/##; s#\.json\.gz$##; s#/([0-9]+\.[0-9]+)#  v\1#; s#/#  #' | paste -sd, - | sed 's/,/, /g')" >> "$GITHUB_OUTPUT"
           fi
 
       # Build first: the MCP worker tests read dist/. The tests assert against
@@ -76,9 +79,19 @@ jobs:
             const versions = process.env.VERSIONS
             const passed = process.env.TESTS === "success"
             const compare = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/main...sync/upstream`
-            await github.rest.issues.create({
+            // The branch is force-pushed daily until merged; keep one open issue
+            // tracking it rather than filing a new one each run.
+            const { data: open } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              state: "open",
+              labels: "upstream-sync",
+            })
+            const existing = open[0]
+            await (existing ? github.rest.issues.update : github.rest.issues.create)({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ...(existing ? { issue_number: existing.number } : {}),
               title: `Upstream released ${versions}`,
               labels: ["upstream-sync"],
               body: [
