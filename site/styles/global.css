@@ -162,6 +162,11 @@
 	@apply m-0 text-[1.6rem] leading-tight font-semibold tracking-[-0.02em];
 }
 
+/* A glyph in a small bordered square, above a section heading. */
+@utility icon-tile {
+	@apply flex h-9 w-9 items-center justify-center rounded-lg border border-rule bg-surface text-ink;
+}
+
 /* Text field: 36px tall, 8px radius, ring on focus. */
 @utility field {
 	@apply h-9 rounded-lg border border-rule bg-surface px-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-faint focus:border-rule-strong focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none;

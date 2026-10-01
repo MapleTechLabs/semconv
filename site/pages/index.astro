@@ -1,4 +1,5 @@
 ---
+import Icon from "../components/Icon.astro"
 import InstallTabs from "../components/InstallTabs.astro"
 import Pill from "../components/Pill.astro"
 import ReleaseActivity from "../components/ReleaseActivity.astro"
@@ -10,6 +11,7 @@ import { TOOLS } from "../../src/mcp/worker.ts"
 import { checkNames } from "../lib/check-names.ts"
 import { buildNameIndex } from "../lib/name-index.ts"
 import { attributeHref, formatDate, severityClass, versionLabel } from "../lib/format.ts"
+import { DOMAIN_ICON, SOURCE_ICON } from "../lib/icons.ts"
 import { SITE } from "../lib/site.ts"
 
 const data = await catalog()
@@ -101,14 +103,16 @@ const STATUS_CLASS: Record<string, string> = {
 			<div class="mt-7 flex flex-wrap gap-2.5">
 				<a
 					href="#check"
-					class="inline-flex h-10 items-center rounded-lg bg-ink px-4 text-sm font-medium text-paper no-underline transition-colors hover:bg-ink/85 hover:text-paper"
+					class="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-paper no-underline transition-colors hover:bg-ink/85 hover:text-paper"
 				>
+					<Icon name="magnifier-check" />
 					Check your attribute names
 				</a>
 				<a
 					href="/agents"
-					class="inline-flex h-10 items-center rounded-lg border border-rule px-4 text-sm font-medium text-ink no-underline transition-colors hover:border-rule-strong hover:bg-surface hover:text-ink"
+					class="inline-flex h-10 items-center gap-2 rounded-lg border border-rule px-4 text-sm font-medium text-ink no-underline transition-colors hover:border-rule-strong hover:bg-surface hover:text-ink"
 				>
+					<Icon name="plug" />
 					Add it to your agent
 				</a>
 			</div>
@@ -117,10 +121,7 @@ const STATUS_CLASS: Record<string, string> = {
 				data-palette-open
 				class="mt-4 flex h-11 w-full max-w-[30rem] cursor-pointer items-center gap-2.5 rounded-lg border border-rule bg-surface px-3.5 text-left text-[13.5px] text-faint transition-colors hover:border-rule-strong hover:text-muted"
 			>
-				<svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
-					<circle cx="11" cy="11" r="7" />
-					<path d="M20 20l-3.5-3.5" />
-				</svg>
+				<Icon name="magnifier" />
 				<span class="flex-1 truncate">Search {searchable.toLocaleString("en")} attributes, metrics and spec rules</span>
 				<kbd class="font-mono text-[11px] text-faint" data-palette-kbd-hint>⌘K</kbd>
 			</button>
@@ -148,7 +149,10 @@ const STATUS_CLASS: Record<string, string> = {
 			{
 				sourceCards.map((card) => (
 					<a href={card.href} class="hairline-cell block no-underline transition-colors hover:bg-surface hover:text-ink">
-						<span class="block text-[13px] text-muted">{SOURCE_LABEL[card.id]}</span>
+						<span class="flex items-center gap-2 text-[13px] text-muted">
+							<Icon name={SOURCE_ICON[card.id] ?? "tag"} class="h-4 w-4 text-ink" />
+							{SOURCE_LABEL[card.id]}
+						</span>
 						<span class="mt-2 block font-mono text-[1.35rem] leading-none font-medium tracking-tight">
 							{UNRELEASED[card.id] ? card.version : versionLabel(card.version)}
 						</span>
@@ -165,7 +169,8 @@ const STATUS_CLASS: Record<string, string> = {
 	<section id="check" class="mt-20 border-t border-rule pt-12">
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-[18rem_1fr]">
 			<div>
-				<h2 class="section-title">Paste the keys your code emits</h2>
+				<span class="icon-tile"><Icon name="magnifier-check" /></span>
+				<h2 class="section-title mt-4">Paste the keys your code emits</h2>
 				<p class="mt-3 mb-0 text-[14px] leading-relaxed text-muted">
 					One per line, or a whole block of code. Each key is checked against v{newest} and the GenAI
 					registry. Nothing leaves your browser.
@@ -219,7 +224,8 @@ const STATUS_CLASS: Record<string, string> = {
 	<section class="mt-20 border-t border-rule pt-12">
 		<div class="flex flex-wrap items-end justify-between gap-4">
 			<div>
-				<h2 class="section-title">Releases land every few weeks</h2>
+				<span class="icon-tile"><Icon name="chart" /></span>
+				<h2 class="section-title mt-4">Releases land every few weeks</h2>
 				<p class="mt-3 mb-0 max-w-[60ch] text-[14px] leading-relaxed text-muted">
 					Every tracked release across the four repositories. Between v{oldest} and v{newest} alone, the
 					conventions made {upgrade.counts.breaking} breaking and {upgrade.counts.notable} notable changes.
@@ -268,7 +274,8 @@ const STATUS_CLASS: Record<string, string> = {
 	<section class="mt-20 border-t border-rule pt-12">
 		<div class="grid grid-cols-1 gap-10 lg:grid-cols-2">
 			<div class="min-w-0">
-				<h2 class="section-title">Stop your agent guessing</h2>
+				<span class="icon-tile"><Icon name="brackets" /></span>
+				<h2 class="section-title mt-4">Stop your agent guessing</h2>
 				<p class="mt-3 mb-0 max-w-[52ch] text-[14px] leading-relaxed text-muted">
 					A model's training data is months behind the registry. Everything here is also a public MCP
 					server with {TOOLS.length} read-only tools. No key, no account. Add it once and your agent can
@@ -291,7 +298,8 @@ const STATUS_CLASS: Record<string, string> = {
 	<section class="mt-20 border-t border-rule pt-12">
 		<div class="flex flex-wrap items-end justify-between gap-4">
 			<div>
-				<h2 class="section-title">Browse by topic</h2>
+				<span class="icon-tile"><Icon name="book" /></span>
+				<h2 class="section-title mt-4">Browse by topic</h2>
 				<p class="mt-3 mb-0 max-w-[60ch] text-[14px] leading-relaxed text-muted">
 					The registry is one flat list. Each topic gathers its attributes, metrics and spans, plus the spec
 					rules that apply to them.
@@ -307,11 +315,12 @@ const STATUS_CLASS: Record<string, string> = {
 							href={`/domains/${domain.slug}`}
 							class="block px-4 py-3.5 no-underline transition-colors hover:bg-surface hover:text-ink"
 						>
-							<span class="flex items-baseline justify-between gap-3">
-								<span class="text-[14px] font-medium">{domain.title}</span>
+							<span class="flex items-center gap-3">
+								<Icon name={DOMAIN_ICON[domain.slug] ?? "tag"} class="h-4 w-4 text-muted" />
+								<span class="flex-1 text-[14px] font-medium">{domain.title}</span>
 								<span class="font-mono text-[12px] text-faint">{domain.attributes}</span>
 							</span>
-							<span class="mt-2.5 block h-1 overflow-hidden rounded-full bg-elevated">
+							<span class="mt-2.5 ml-7 block h-1 overflow-hidden rounded-full bg-elevated">
 								<span
 									class="block h-full rounded-full bg-rule-strong"
 									style={`width:${Math.max((domain.attributes / maxDomain) * 100, 3).toFixed(1)}%`}

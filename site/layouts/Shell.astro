@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css"
+import Icon from "../components/Icon.astro"
 import MapleMark from "../components/MapleMark.astro"
 import SemconvMark from "../components/SemconvMark.astro"
 import Palette from "../components/Palette.astro"
@@ -97,10 +98,7 @@ const isActive = (href: string) => path.startsWith(href)
 
 				<form action="/search" method="get" role="search" class="ml-auto flex h-14 items-center">
 					<label class="relative flex h-7 w-40 items-center rounded-lg border border-rule text-muted transition-colors focus-within:border-rule-strong hover:border-rule-strong sm:w-56">
-						<svg class="pointer-events-none absolute left-2 h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
-							<circle cx="11" cy="11" r="7" />
-							<path d="M20 20l-3.5-3.5" />
-						</svg>
+						<Icon name="magnifier" class="pointer-events-none absolute left-2 h-3.5 w-3.5" />
 						<input
 							id="site-search"
 							type="search"

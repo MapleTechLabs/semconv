@@ -1,5 +1,7 @@
 ---
+import Icon from "../../components/Icon.astro"
 import Shell from "../../layouts/Shell.astro"
+import { DOMAIN_ICON } from "../../lib/icons.ts"
 import { catalog } from "../../../src/model/catalog.ts"
 import { buildDomains } from "../../../src/model/domains.ts"
 
@@ -37,6 +39,7 @@ const total = domains.reduce((n, domain) => n + domain.attributes.length, 0)
 				// defaults to min-width:auto, so without this the nowrap text widens
 				// the track and the whole page scrolls sideways on a phone.
 				<article class="hairline-cell">
+					<span class="icon-tile mb-4"><Icon name={DOMAIN_ICON[domain.slug] ?? "tag"} /></span>
 					<h2 class="m-0 flex flex-wrap items-baseline gap-x-2.5 text-[15px] font-semibold tracking-tight">
 						<a href={`/domains/${domain.slug}`} class="no-underline hover:underline">
 							{domain.title}

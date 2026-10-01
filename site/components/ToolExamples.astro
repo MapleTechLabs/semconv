@@ -1,8 +1,10 @@
 ---
+import Icon from "./Icon.astro"
 import Pill from "./Pill.astro"
 import { catalog, SOURCE_REPO } from "../../src/model/catalog.ts"
 import { checkNames } from "../lib/check-names.ts"
 import { attributeHref, severityClass } from "../lib/format.ts"
+import type { IconName } from "../lib/icons.ts"
 import { buildNameIndex } from "../lib/name-index.ts"
 
 /**
@@ -40,10 +42,10 @@ const VERDICT: Record<string, { label: string; cls: string }> = {
 	unknown: { label: "not in registry", cls: "text-muted bg-elevated" },
 }
 
-const examples = [
-	{ id: "check", label: "Check names" },
-	{ id: "diff", label: "Plan an upgrade" },
-	{ id: "spec", label: "Cite the spec" },
+const examples: readonly { id: string; label: string; icon: IconName }[] = [
+	{ id: "check", label: "Check names", icon: "magnifier-check" },
+	{ id: "diff", label: "Plan an upgrade", icon: "find-replace" },
+	{ id: "spec", label: "Cite the spec", icon: "clipboard-check" },
 ]
 ---
 
@@ -59,6 +61,7 @@ const examples = [
 					data-on={i === 0 ? "" : undefined}
 					aria-selected={i === 0 ? "true" : "false"}
 				>
+					<Icon name={ex.icon} class="h-3.5 w-3.5" />
 					{ex.label}
 				</button>
 			))
