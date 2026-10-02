@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-09-29T18:12:41Z",
+	"generatedAt": "2026-09-30T16:53:14Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "b9ecbae",
+			"version": "2026-09-30",
+			"publishedAt": "2026-09-30T16:53:14Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/b9ecbaef4ac462cc2b6f7f7763b2cff1d15d5400",
+			"body": "Add `gen_ai.main_agent` entity (#270)"
+		},
 		{
 			"source": "genai",
 			"tag": "771e321",
