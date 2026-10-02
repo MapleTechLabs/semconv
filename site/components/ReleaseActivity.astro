@@ -1,12 +1,15 @@
 ---
 import { SOURCE_LABEL, SOURCES, UNRELEASED, type Catalog } from "../../src/model/catalog.ts"
-import { versionLabel } from "../lib/format.ts"
+import { sortChanges } from "../../src/model/change.ts"
+import { formatDate, kindLabel, severityClass, versionLabel } from "../lib/format.ts"
+import Pill from "./Pill.astro"
 
 /**
  * Every tracked release on one time axis, one lane per repository. A bar's
  * height is its breaking plus notable changes (square-root scaled, so one
  * 128-change release does not flatten the rest); the red cap is the breaking
- * share. Each bar links to that release.
+ * share. Each bar links to that release; hovering or focusing one shows its
+ * counts and its most consequential changes in a shared card.
  */
 interface Props {
 	data: Catalog
@@ -22,6 +25,12 @@ const span = end - start.getTime()
 const x = (iso: string) => ((Date.parse(iso) - start.getTime()) / span) * 100
 
 const peak = Math.max(...entries.map((e) => e.diff.counts.breaking + e.diff.counts.notable))
+/** How many changes the hover card lists before collapsing the rest into "+N more". */
+const PREVIEW = 6
+
+/** Spec ids are repo paths; the file and anchor are the part that fits and tells them apart. */
+const shortId = (id: string) => id.slice(id.lastIndexOf("/") + 1)
+
 const height = (n: number) => (n === 0 ? 6 : 12 + (Math.sqrt(n) / Math.sqrt(peak)) * 88)
 
 const lanes = SOURCES.map((id) => ({
@@ -32,12 +41,20 @@ const lanes = SOURCES.map((id) => ({
 		.map((e) => {
 			const { breaking, notable } = e.diff.counts
 			const total = breaking + notable
+			const version = UNRELEASED[id] ? e.version : versionLabel(e.version)
+			const listed = sortChanges(e.diff.changes.filter((c) => c.severity !== "informational"))
 			return {
 				href: `/releases/${id}/${e.version}`,
 				left: x(e.publishedAt),
 				height: height(total),
 				breakingShare: total === 0 ? 0 : breaking / total,
-				label: `${SOURCE_LABEL[id]} ${UNRELEASED[id] ? e.version : versionLabel(e.version)}: ${breaking} breaking, ${notable} notable`,
+				version,
+				date: formatDate(e.publishedAt),
+				breaking,
+				notable,
+				preview: listed.slice(0, PREVIEW),
+				more: listed.length - PREVIEW,
+				label: `${SOURCE_LABEL[id]} ${version}: ${breaking} breaking, ${notable} notable`,
 			}
 		}),
 }))
@@ -52,7 +69,7 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 }
 ---
 
-<figure class="m-0">
+<figure class="relative m-0" data-release-activity>
 	<div class="flex flex-col gap-px overflow-hidden rounded-xl border border-rule bg-rule">
 		{
 			lanes.map((lane) => (
@@ -67,16 +84,33 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 						{lane.bars.map((bar) => (
 							<a
 								href={bar.href}
-								title={bar.label}
 								aria-label={bar.label}
-								class="group absolute bottom-0 flex w-2.5 -translate-x-1/2 justify-center"
-								style={`left:${bar.left.toFixed(2)}%;height:${bar.height.toFixed(1)}%`}
+								data-bar
+								data-lane={lane.label}
+								data-version={bar.version}
+								data-date={bar.date}
+								data-breaking={bar.breaking}
+								data-notable={bar.notable}
+								class="group absolute inset-y-0 flex w-2.5 -translate-x-1/2 items-end justify-center outline-none"
+								style={`left:${bar.left.toFixed(2)}%`}
 							>
-								<span class="flex h-full w-1 flex-col rounded-t-[1px] bg-muted/60 transition-colors group-hover:bg-ink">
+								<span
+									class="flex w-1 flex-col rounded-t-[1px] bg-muted/60 transition-colors group-hover:bg-ink group-focus-visible:bg-ink"
+									style={`height:${bar.height.toFixed(1)}%`}
+								>
 									{bar.breakingShare > 0 && (
 										<span class="block w-full shrink-0 bg-breaking" style={`height:${Math.max(bar.breakingShare * 100, 18).toFixed(1)}%`} />
 									)}
 								</span>
+								<template data-changes>
+									{bar.preview.map((change) => (
+										<li class="flex min-w-0 items-center gap-2">
+											<Pill label={kindLabel(change.kind)} class={severityClass(change.severity)} />
+											<span class="truncate font-mono text-[11.5px] text-ink">{shortId(change.id)}</span>
+										</li>
+									))}
+									{bar.more > 0 && <li class="pt-0.5 text-faint">+{bar.more} more</li>}
+								</template>
 							</a>
 						))}
 					</div>
@@ -99,9 +133,63 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 			</div>
 		</div>
 	</div>
+	<div
+		data-tooltip
+		role="tooltip"
+		class="pointer-events-none absolute top-0 left-0 z-10 hidden w-80 max-w-[calc(100%-1rem)] rounded-lg border border-rule-strong bg-elevated px-3 py-2 text-[12.5px] whitespace-nowrap"
+	>
+		<div class="text-faint" data-tt-lane></div>
+		<div class="mt-0.5 flex items-baseline justify-between gap-3">
+			<span class="font-mono text-ink" data-tt-version></span>
+			<span class="font-mono text-[11px] text-faint" data-tt-date></span>
+		</div>
+		<div class="mt-1.5 flex gap-3 border-t border-rule pt-1.5">
+			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-breaking"></span><span class="font-mono text-ink" data-tt-breaking></span> breaking</span>
+			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-muted/60"></span><span class="font-mono text-ink" data-tt-notable></span> notable</span>
+		</div>
+		<ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0 empty:hidden" data-tt-changes></ul>
+	</div>
 	<figcaption class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-faint">
 		<span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-1 bg-muted/60"></span>Height: notable and breaking changes</span>
 		<span class="inline-flex items-center gap-1.5"><span class="inline-block h-2.5 w-1 bg-breaking"></span>Breaking</span>
 		<span>Each bar opens that release.</span>
 	</figcaption>
 </figure>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>("[data-release-activity]")) {
+		const tip = root.querySelector<HTMLElement>("[data-tooltip]")
+		if (!tip) continue
+		const field = (name: string) => tip.querySelector<HTMLElement>(`[data-tt-${name}]`)
+		const fields = ["lane", "version", "date", "breaking", "notable"].map((name) => [name, field(name)] as const)
+
+		const show = (bar: HTMLElement) => {
+			for (const [name, el] of fields) if (el) el.textContent = bar.dataset[name] ?? ""
+			const list = field("changes")
+			const changes = bar.querySelector("template")
+			if (list) list.replaceChildren(changes ? changes.content.cloneNode(true) : "")
+			tip.classList.remove("hidden")
+			const box = root.getBoundingClientRect()
+			const target = (bar.firstElementChild ?? bar).getBoundingClientRect()
+			const center = target.left + target.width / 2 - box.left
+			const left = Math.min(Math.max(center - tip.offsetWidth / 2, 0), box.width - tip.offsetWidth)
+			// Above the bar when there is room inside the figure, else below the lane.
+			const above = target.top - box.top - tip.offsetHeight - 8
+			const top = above >= 0 ? above : bar.getBoundingClientRect().bottom - box.top + 8
+			tip.style.transform = `translate(${left}px, ${top}px)`
+		}
+		const hide = () => tip.classList.add("hidden")
+		const barOf = (node: EventTarget | null) => (node instanceof Element ? node.closest<HTMLElement>("[data-bar]") : null)
+
+		const onEnter = (event: Event) => {
+			const bar = barOf(event.target)
+			if (bar) show(bar)
+		}
+		root.addEventListener("pointerover", onEnter)
+		root.addEventListener("focusin", onEnter)
+		root.addEventListener("pointerout", (event) => {
+			if (!barOf(event.relatedTarget)) hide()
+		})
+		root.addEventListener("focusout", hide)
+	}
+</script>
