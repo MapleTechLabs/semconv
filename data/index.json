@@ -1,6 +1,22 @@
 {
-	"generatedAt": "2026-09-30T16:53:14Z",
+	"generatedAt": "2026-10-05T19:09:15Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "cb10b70",
+			"version": "2026-10-05.2",
+			"publishedAt": "2026-10-05T19:09:15Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/cb10b70c15c099ccab144e8316d934c9699da0fd",
+			"body": "Clarify failed GenAI content capture (#459)"
+		},
+		{
+			"source": "genai",
+			"tag": "81e7e43",
+			"version": "2026-10-05",
+			"publishedAt": "2026-10-05T19:08:05Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/81e7e4359065a42183a507be96fe4b832e22503e",
+			"body": "Recommend the inference event be of severity level debug (severity number 5) (#520)"
+		},
 		{
 			"source": "genai",
 			"tag": "b9ecbae",
