@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-05T19:09:15Z",
+	"generatedAt": "2026-10-06T19:55:48Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "4f85037",
+			"version": "2026-10-06",
+			"publishedAt": "2026-10-06T19:55:48Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/4f85037ef86e92c510d2ef881a58f1076f6fc0e4",
+			"body": "Use `gen_ai.client.inference.duration` metric instead of `gen_ai.client.operation.duration` and move inference signals to one file (#521)"
+		},
 		{
 			"source": "genai",
 			"tag": "cb10b70",
