@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-06T19:55:48Z",
+	"generatedAt": "2026-10-09T19:16:56Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "6a1163c",
+			"version": "2026-10-09",
+			"publishedAt": "2026-10-09T19:16:56Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/6a1163cb00a7497b71e6e0266a2b489e92f86291",
+			"body": "Record token usage histograms for failed operations (#536)"
+		},
 		{
 			"source": "genai",
 			"tag": "4f85037",
