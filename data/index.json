@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-17T19:12:05Z",
+	"generatedAt": "2026-10-21T19:06:47Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "9ffc7e0",
+			"version": "2026-10-21",
+			"publishedAt": "2026-10-21T19:06:47Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/9ffc7e00c639be7712e544e3e54331e885dccf84",
+			"body": "Record only positive inference usage contributions (#602)"
+		},
 		{
 			"source": "genai",
 			"tag": "0b9555d",
