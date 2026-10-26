@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-22T23:32:52Z",
+	"generatedAt": "2026-10-26T04:55:42Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "2025935",
+			"version": "2026-10-26",
+			"publishedAt": "2026-10-26T04:55:42Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/20259355b9631e3f032dcc099d1b5a2666818c42",
+			"body": "Use `gen_ai.client.embeddings.duration` and `gen_ai.client.embeddings.operation.input_tokens` metrics for embeddings, move embeddings signals to one file (#578)"
+		},
 		{
 			"source": "spec",
 			"tag": "v1.62.0",
