@@ -1,6 +1,46 @@
 {
-	"generatedAt": "2026-10-26T04:55:42Z",
+	"generatedAt": "2026-10-27T16:43:29Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "51a0f58",
+			"version": "2026-10-27.2",
+			"publishedAt": "2026-10-27T16:43:29Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/51a0f580f8a6ad804ca4de5e033683c6fbbe5906",
+			"body": "Define external references for generative AI inference content (#490)"
+		},
+		{
+			"source": "genai",
+			"tag": "e19717d",
+			"version": "2026-10-27",
+			"publishedAt": "2026-10-27T01:38:58Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/e19717d65f890955777b044bca2a3cd71ae8b498",
+			"body": "semconv for a2a protocol (#195)"
+		},
+		{
+			"source": "genai",
+			"tag": "760c1da",
+			"version": "2026-10-26.4",
+			"publishedAt": "2026-10-26T19:11:24Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/760c1da52f3a30ed0e940f519b5adc314271747a",
+			"body": "Clarify client inference span is a logical operation  (#562)"
+		},
+		{
+			"source": "genai",
+			"tag": "6481373",
+			"version": "2026-10-26.3",
+			"publishedAt": "2026-10-26T18:27:45Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/6481373a60d49f59730bae2c87274d99d6d9e743",
+			"body": "Unified OpenTelemetry model for tracking agent-to-agent interactions (#447)"
+		},
+		{
+			"source": "genai",
+			"tag": "24a1bd1",
+			"version": "2026-10-26.2",
+			"publishedAt": "2026-10-26T18:24:14Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/24a1bd1e729ac4f99f9a3bd1fa98e87b2dbcfe2c",
+			"body": "Define and formalize GenAI content capture and upload configuration options (#543)"
+		},
 		{
 			"source": "genai",
 			"tag": "2025935",
