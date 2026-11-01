@@ -33,6 +33,17 @@ export const GET: APIRoute = async () => {
 			kind: signal.kind,
 			spanKind: signal.spanKind ?? null,
 		})),
+		rules: domain.def.rules
+			? {
+					source: domain.def.rules.doc,
+					items: domain.def.rules.items.map((rule) => ({
+						title: rule.title,
+						level: rule.level,
+						text: rule.text,
+						url: `${domain.def.rules?.doc}#${rule.anchor}`,
+					})),
+				}
+			: null,
 		governedBy: domain.governance.map((entry) => ({
 			area: entry.area,
 			governs: entry.what,

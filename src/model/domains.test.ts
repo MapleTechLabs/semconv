@@ -55,4 +55,17 @@ describe("assembled domains", () => {
 		// says "database" — that link is the point of the page.
 		expect(db.governance.some((g) => g.area === "trace")).toBe(true)
 	})
+
+	test("MCP is its own domain: its spans and metrics leave Generative AI", () => {
+		const mcp = domains.find((d) => d.slug === "mcp")
+		const genai = domains.find((d) => d.slug === "gen-ai")
+		if (!mcp || !genai) throw new Error("missing mcp or gen-ai domain")
+		expect(mcp.attributes.some(({ attribute }) => attribute.id === "mcp.method.name")).toBe(true)
+		expect(mcp.metrics.map((m) => m.name)).toContain("mcp.server.operation.duration")
+		// Moved signals stay behind in semantic-conventions as stubs; each shows once.
+		expect(mcp.spans.map((s) => s.spanKind).sort()).toEqual(["client", "server"])
+		expect(new Set(mcp.metrics.map((m) => m.name)).size).toBe(mcp.metrics.length)
+		expect(genai.metrics.some((m) => m.name.startsWith("mcp."))).toBe(false)
+		expect(genai.attributes.some(({ attribute }) => attribute.namespace === "mcp")).toBe(false)
+	})
 })

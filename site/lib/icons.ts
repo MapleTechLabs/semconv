@@ -41,6 +41,7 @@ export const DOMAIN_ICON: Record<string, IconName> = {
 	rpc: "paper-plane",
 	messaging: "msgs",
 	"gen-ai": "sparkle",
+	mcp: "plug",
 	cloud: "cloud",
 	kubernetes: "box",
 	infrastructure: "laptop",

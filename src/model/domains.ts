@@ -32,7 +32,31 @@ export interface DomainDef {
 	 * loosely-related requirements is worse than one showing six real ones.
 	 */
 	readonly keywords?: readonly string[]
+	/**
+	 * Rules that bind this domain but live in prose, not in the registry, so the
+	 * signal and attribute lists alone would miss them. Each one cites its source.
+	 */
+	readonly rules?: DomainRules
 }
+
+export interface DomainRule {
+	readonly title: string
+	/** The strongest keyword in the upstream sentence. */
+	readonly level: "MUST" | "SHOULD" | "SHOULD NOT" | "MAY"
+	/** Markdown with inline code, rendered through `inlineCode`. */
+	readonly text: string
+	/** Heading anchor in `DomainRules.doc`. */
+	readonly anchor: string
+}
+
+export interface DomainRules {
+	/** Absolute URL of the upstream document the rules paraphrase. */
+	readonly doc: string
+	readonly items: readonly DomainRule[]
+}
+
+/** The GenAI registry is unreleased, so its prose is cited from the default branch. */
+const GENAI_MCP_DOC = "https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/mcp.md"
 
 export const DOMAINS: readonly DomainDef[] = [
 	{
@@ -66,10 +90,76 @@ export const DOMAINS: readonly DomainDef[] = [
 	{
 		slug: "gen-ai",
 		title: "Generative AI",
-		blurb: "Model calls, agents, tools, MCP and A2A. Split into its own repository in v1.44.0 and still unreleased.",
-		namespaces: ["gen_ai", "openai", "mcp", "a2a"],
+		blurb: "Model calls, agents, tools and A2A. Split into its own repository in v1.44.0 and still unreleased.",
+		namespaces: ["gen_ai", "openai", "a2a"],
 		aliases: ["anthropic"],
 		keywords: ["GenAI", "LLM"],
+	},
+	{
+		slug: "mcp",
+		title: "Model Context Protocol",
+		blurb: "MCP clients and servers: tool calls, prompts, resources and sessions over JSON-RPC, on stdio or Streamable HTTP. Defined in the GenAI registry.",
+		namespaces: ["mcp"],
+		keywords: ["MCP", "Model Context Protocol"],
+		rules: {
+			doc: GENAI_MCP_DOC,
+			items: [
+				{
+					title: "Propagate context in the message, not the transport",
+					level: "SHOULD",
+					text: "Inject the trace context into the request's `params._meta`, using the unprefixed keys `traceparent`, `tracestate` and `baggage` (SEP-414). The receiver extracts it from there and uses it as the remote parent.",
+					anchor: "context-propagation",
+				},
+				{
+					title: "The transport span is a link, not the parent",
+					level: "SHOULD",
+					text: "One Streamable HTTP request can carry several MCP messages, and one message can span several HTTP requests on retry. The server span takes its parent from `params._meta` and links the ambient (HTTP) context if there is one.",
+					anchor: "context-propagation",
+				},
+				{
+					title: "Name spans after the method and its target",
+					level: "SHOULD",
+					text: "`{mcp.method.name} {target}`, where the target is `gen_ai.tool.name` or `gen_ai.prompt.name`: `tools/call get-weather`. With no low-cardinality target, just `{mcp.method.name}`. `mcp.resource.uri` goes in the name only when a user opts in.",
+					anchor: "client",
+				},
+				{
+					title: "A tool that returns isError is a tool_error",
+					level: "SHOULD",
+					text: "A `CallToolResult` with `isError: true` is a successful JSON-RPC call, so it carries no error code. Set `error.type` to `tool_error`. A JSON-RPC error sets `rpc.response.status_code` and `error.type` to the code; an HTTP failure without one uses the HTTP status code.",
+					anchor: "client",
+				},
+				{
+					title: "The caller's mistakes are not server errors",
+					level: "SHOULD NOT",
+					text: "On the server, `-32700`, `-32600`, `-32601`, `-32602` (including an unknown tool) and `-32002` mean the caller sent something the server could not serve. They are not errors on the server span; every other code is.",
+					anchor: "server",
+				},
+				{
+					title: "One span per tool call",
+					level: "SHOULD NOT",
+					text: "If GenAI instrumentation already traces the tool execution, the MCP client adds its attributes to that `execute_tool` span instead of creating another. Set `gen_ai.operation.name` to `execute_tool` on tool calls only.",
+					anchor: "client",
+				},
+				{
+					title: "MCP conventions over RPC ones",
+					level: "SHOULD",
+					text: "MCP is JSON-RPC, but the RPC and HTTP conventions miss the messages inside a streaming call. Use `mcp.method.name` rather than `rpc.method`.",
+					anchor: "semantic-conventions-for-model-context-protocol-mcp",
+				},
+				{
+					title: "Duration buckets from 10 ms to 5 minutes",
+					level: "SHOULD",
+					text: "The operation and session duration histograms are in seconds, with explicit bucket boundaries `[0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300]`.",
+					anchor: "metrics",
+				},
+				{
+					title: "Arguments and results are opt-in",
+					level: "MAY",
+					text: "`gen_ai.tool.call.arguments`, `gen_ai.tool.call.result` and prompt arguments (`gen_ai.prompt.variable.<name>`) may hold sensitive data, so they are recorded only when a user opts in.",
+					anchor: "client",
+				},
+			],
+		},
 	},
 	{
 		slug: "cloud",
@@ -268,6 +358,17 @@ function keywordMatcher(keywords: readonly string[]): RegExp | undefined {
 
 const LEVEL_ORDER = ["required", "conditionally_required", "recommended", "opt_in"]
 
+/** Signal ids are spelled with and without their `span.`/`event.` prefix upstream. */
+const signalKey = (signal: SignalDef) => signal.id.replace(/^(span|event|entity)\./, "")
+
+/**
+ * Metrics and signals moved to the GenAI registry stay behind in semantic-conventions
+ * as stubs, the same as attributes do. The GenAI copy comes last, so it wins.
+ */
+function latestWins<T>(items: readonly T[], key: (item: T) => string): readonly T[] {
+	return [...new Map(items.map((item) => [key(item), item])).values()]
+}
+
 export function buildDomains(data: Catalog): readonly Domain[] {
 	const entries = registryAttributes(data)
 	const specSections = [...data.spec.latest.sections, ...data.proto.latest.sections]
@@ -322,8 +423,10 @@ export function buildDomains(data: Catalog): readonly Domain[] {
 		const counts = new Map<string, number>()
 		for (const { attribute } of attributes) counts.set(attribute.namespace, (counts.get(attribute.namespace) ?? 0) + 1)
 
-		const signals = [...data.signals, ...data.genai.latest.signals].filter((s) => owns(s.id.replace(/^(span|event|entity)\./, "")))
-		const metrics = [...data.metrics, ...data.genai.latest.metrics]
+		const signals = latestWins([...data.signals, ...data.genai.latest.signals], (s) => `${s.kind}:${signalKey(s)}`).filter(
+			(s) => owns(signalKey(s)),
+		)
+		const metrics = latestWins([...data.metrics, ...data.genai.latest.metrics], (m) => m.name)
 			.filter((m) => owns(m.name))
 			.sort((a, b) => a.name.localeCompare(b.name))
 

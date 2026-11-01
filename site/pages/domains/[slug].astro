@@ -46,7 +46,10 @@ const sectionUrl = (path: string, anchor: string) =>
 
 const shownRequirements = domain.requirements.slice(0, 8)
 
+const rules = domain.def.rules
+
 const jump = [
+	rules && { href: "#rules", label: `Rules ${rules.items.length}` },
 	signalGroups.length > 0 && { href: "#signals", label: "Signals" },
 	domain.metrics.length > 0 && { href: "#metrics", label: `Metrics ${domain.metrics.length}` },
 	{ href: "#specification", label: "Specification" },
@@ -101,6 +104,35 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 	<nav class="mt-7 flex flex-wrap gap-x-4 gap-y-1 border-y border-rule py-2 text-[13px] text-muted">
 		{jump.map((item) => <a href={item.href} class="no-underline hover:text-ink">{item.label}</a>)}
 	</nav>
+
+	{
+		rules && (
+			<section id="rules" class="mt-9">
+				<h2 class="eyebrow">Rules</h2>
+				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
+					What the lists below cannot show: these rules live in the convention's prose, not in its registry.
+					Paraphrased from <a href={rules.doc} class="font-mono text-[12.5px]">{rules.doc.split("/blob/")[1]}</a>; the
+					upstream wording wins.
+				</p>
+				<ul class="mt-3 m-0 list-none p-0">
+					{rules.items.map((rule) => (
+						<li class="border-b border-rule py-2.5">
+							<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+								<Pill
+									label={rule.level}
+									class={rule.level === "MUST" ? severityClass("notable") : "text-muted bg-elevated"}
+								/>
+								<a href={`${rules.doc}#${rule.anchor}`} class="text-[13.5px] font-medium text-ink no-underline hover:underline">
+									{rule.title}
+								</a>
+							</div>
+							<p class="mt-1 mb-0 text-[13.5px] text-muted max-w-[80ch]" set:html={inlineCode(rule.text)} />
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
 
 	{
 		signalGroups.length > 0 && (
