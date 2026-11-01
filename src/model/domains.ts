@@ -66,8 +66,8 @@ export const DOMAINS: readonly DomainDef[] = [
 	{
 		slug: "gen-ai",
 		title: "Generative AI",
-		blurb: "Model calls, agents, tools and MCP. Split into its own repository in v1.44.0 and still unreleased.",
-		namespaces: ["gen_ai", "openai", "mcp"],
+		blurb: "Model calls, agents, tools, MCP and A2A. Split into its own repository in v1.44.0 and still unreleased.",
+		namespaces: ["gen_ai", "openai", "mcp", "a2a"],
 		aliases: ["anthropic"],
 		keywords: ["GenAI", "LLM"],
 	},
