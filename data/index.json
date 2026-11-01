@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-27T16:43:29Z",
+	"generatedAt": "2026-10-31T23:42:46Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "244465e",
+			"version": "2026-10-31",
+			"publishedAt": "2026-10-31T23:42:46Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/244465e94b9d7167fa5ed5c31a4b2b49ab6ddee5",
+			"body": "Clarify GenAI time-to-first-chunk measurement (#617)"
+		},
 		{
 			"source": "genai",
 			"tag": "51a0f58",
