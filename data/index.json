@@ -1,6 +1,14 @@
 {
-	"generatedAt": "2026-10-31T23:42:46Z",
+	"generatedAt": "2026-11-01T22:04:52Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "dc35715",
+			"version": "2026-11-01",
+			"publishedAt": "2026-11-01T22:04:52Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/dc3571562603552dc555c667dfa327a638d94ab2",
+			"body": "Clarify token usage totals and modality breakdown (#560)"
+		},
 		{
 			"source": "genai",
 			"tag": "244465e",
