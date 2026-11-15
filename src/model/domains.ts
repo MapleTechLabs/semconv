@@ -99,7 +99,7 @@ const PROFILES_PROTO = `${PROTO_AT}/opentelemetry/proto/profiles/v1development/p
 const COMMON_PROTO = `${PROTO_AT}/opentelemetry/proto/common/v1/common.proto`
 /** The development version header is merged but in no release yet. */
 const OTLP_SPEC_MAIN = "https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md"
-const SEMCONV_PROFILES_DOC = "https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/general/profiles.md"
+const SEMCONV_PROFILES_DOC = "https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/docs/general/profiles.md"
 const SPEC_MAPPINGS_DOC = "https://github.com/open-telemetry/opentelemetry-specification/blob/v1.62.0/specification/profiles/mappings.md"
 
 export const DOMAINS: readonly DomainDef[] = [
@@ -128,7 +128,7 @@ export const DOMAINS: readonly DomainDef[] = [
 		slug: "messaging",
 		title: "Messaging",
 		blurb: "Queues, topics and brokers — producing, receiving, processing and settling a message.",
-		namespaces: ["messaging", "message", "cloudevents"],
+		namespaces: ["messaging", "message", "cloudevents", "kafka", "rabbitmq", "rocketmq"],
 		keywords: ["messaging", "message queue"],
 	},
 	{
