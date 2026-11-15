@@ -62,14 +62,14 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	<dl class="mt-7 grid grid-cols-2 gap-x-8 gap-y-4 sm:grid-cols-4 max-w-2xl">
 		{
 			[
-				{ value: totals.messages, label: "messages" },
-				{ value: totals.enums, label: "enums" },
-				{ value: requirements.length, label: "protocol rules" },
-				{ value: breakingSoFar, label: "breaking changes tracked" },
+				{ value: totals.messages, label: "Messages" },
+				{ value: totals.enums, label: "Enums" },
+				{ value: requirements.length, label: "Protocol rules" },
+				{ value: breakingSoFar, label: "Breaking changes tracked" },
 			].map((stat) => (
 				<div class="m-0">
-					<dt class="text-[12px] uppercase tracking-wide text-faint">{stat.label}</dt>
-					<dd class="m-0 font-mono text-[1.6rem] leading-none font-medium">{stat.value}</dd>
+					<dt class="eyebrow">{stat.label}</dt>
+					<dd class="stat-figure mt-1.5">{stat.value}</dd>
 				</div>
 			))
 		}
@@ -88,7 +88,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	{
 		serverRules.length > 0 && (
 			<section class="mt-10">
-				<h2 class="eyebrow">
+				<h2 class="section-head">
 					Server obligations
 				</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[68ch]">
@@ -116,7 +116,7 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 	}
 
 	<section class="mt-11">
-		<h2 class="eyebrow">Wire definitions</h2>
+		<h2 class="section-head">Wire definitions</h2>
 
 		<div class="mt-4 flex flex-col gap-8">
 			{

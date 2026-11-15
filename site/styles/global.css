@@ -4,10 +4,11 @@
 
 /*
  * A reference tool, not a landing page: dense, quiet, and readable at length.
- * The palette is Maple's - warm charcoal and bone in the dark, amber for the
- * one accent - so the site reads as a sibling of maple.dev. Colour beyond that
- * is reserved for signal: stability and severity. A page of prose stays
- * monochrome and a breaking change is visible from across the room.
+ * The palette is Maple's: near-neutral greys spread wide enough to tell a
+ * canvas from a page from a card, and amber for the one accent, so the site
+ * reads as a sibling of maple.dev. Colour beyond that is reserved for signal:
+ * stability and severity. A page of prose stays monochrome and a breaking
+ * change is visible from across the room.
  *
  * Token values mirror `@maple/ui/styles/tokens.css` (`:root` for light, `.dark`
  * for dark). They are copied rather than imported because that package is not
@@ -18,33 +19,53 @@
 	--font-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 	--font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
+	/* The ladder: canvas (behind the page), paper (the page), surface (a card or
+	   field on it), elevated (a chip, a wash). Maple's sidebar, background, card
+	   and muted. */
+	--color-canvas: oklch(0.975 0.002 80);
 	--color-paper: oklch(1 0 0);
-	--color-surface: oklch(0.985 0 0);
-	--color-elevated: oklch(0.967 0.001 286.375);
-	--color-deep: oklch(0.985 0.002 75);
-	--color-ink: oklch(0.141 0.005 285.823);
-	--color-muted: oklch(0.552 0.016 285.938);
-	--color-faint: oklch(0.66 0.012 286);
-	--color-rule: oklch(0.92 0.004 286.32);
-	--color-rule-strong: oklch(0.84 0.006 286);
+	--color-surface: oklch(0.985 0.001 80);
+	--color-elevated: oklch(0.96 0.002 80);
+	--color-deep: oklch(0.975 0.002 80);
+	/* The current nav item on the canvas; hover is half of it. */
+	--color-canvas-accent: oklch(0.94 0.003 80);
+	/* Text steps are solid, and `faint` is the last one that carries information:
+	   it clears 4.5:1 on the page in both themes. */
+	--color-ink: oklch(0.18 0.006 70);
+	--color-muted: oklch(0.5 0.01 70);
+	--color-faint: oklch(0.535 0.008 70);
+	--color-rule: oklch(0.915 0.003 80);
+	--color-rule-strong: oklch(0.84 0.004 80);
+	--color-ring: oklch(0.705 0.01 75);
 
-	--color-primary: oklch(0.66 0.16 59);
-	--color-primary-fg: oklch(0.21 0.008 67);
+	/* The fill is tuned to be seen and sits near 3:1 as type on white, so text
+	   reads the deeper ink of the same hue. In dark the fill is the ink. */
+	--color-primary: oklch(0.7 0.155 60);
+	--color-primary-fg: oklch(0.2 0.01 60);
+	--color-primary-ink: oklch(0.52 0.14 55);
+	--text-color-primary: var(--color-primary-ink);
 	/* `accent` is the pre-Maple name for the same slot; kept so nothing breaks. */
-	--color-accent: oklch(0.66 0.16 59);
+	--color-accent: oklch(0.7 0.155 60);
 
-	--color-breaking: oklch(0.577 0.245 27.325);
-	--color-breaking-bg: oklch(0.577 0.245 27.325 / 0.1);
-	--color-notable: oklch(0.62 0.17 74);
-	--color-notable-bg: oklch(0.7 0.17 74 / 0.14);
-	--color-stable: oklch(0.55 0.15 162);
+	/* Signal tones, each an ink with a 12% wash of its fill. `notable` is a
+	   yellow well off the primary's hue: a MUST must never read as a link. */
+	--color-breaking: oklch(0.53 0.22 27);
+	--color-breaking-bg: oklch(0.637 0.237 25.331 / 0.12);
+	--color-notable: oklch(0.52 0.12 75);
+	--color-notable-bg: oklch(0.73 0.165 88 / 0.16);
+	--color-stable: oklch(0.51 0.13 160);
 	--color-stable-bg: oklch(0.696 0.17 162.48 / 0.12);
-	--color-rc: oklch(0.55 0.18 259);
-	--color-rc-bg: oklch(0.623 0.214 259.815 / 0.1);
+	--color-rc: oklch(0.52 0.2 260);
+	--color-rc-bg: oklch(0.623 0.214 259.815 / 0.12);
+
+	/* The only shadow besides the palette's backdrop: a card or the page panel
+	   lifted off what it sits on. */
+	--shadow-raised: 0 1px 2px 0 var(--raised-shade);
 }
 
 :root {
 	color-scheme: light dark;
+	--raised-shade: oklch(0 0 0 / 5%);
 }
 
 /*
@@ -54,28 +75,34 @@
  */
 @media (prefers-color-scheme: dark) {
 	:root {
-		--color-paper: oklch(0.207 0.008 67);
-		--color-surface: oklch(0.224 0.009 75);
-		--color-elevated: oklch(0.245 0.01 72);
-		--color-deep: oklch(0.165 0.007 67);
-		--color-ink: oklch(0.91 0.016 74);
-		--color-muted: oklch(0.603 0.023 72);
-		--color-faint: oklch(0.49 0.018 70);
-		--color-rule: oklch(0.268 0.012 67);
-		--color-rule-strong: oklch(0.34 0.014 67);
+		--color-canvas: oklch(0.155 0.004 70);
+		--color-paper: oklch(0.19 0.005 70);
+		--color-surface: oklch(0.21 0.005 70);
+		--color-elevated: oklch(0.245 0.005 70);
+		--color-deep: oklch(0.155 0.004 70);
+		--color-canvas-accent: oklch(0.225 0.005 70);
+		--color-ink: oklch(0.955 0.005 80);
+		--color-muted: oklch(0.7 0.009 75);
+		--color-faint: oklch(0.64 0.008 75);
+		--color-rule: oklch(0.26 0.005 70);
+		--color-rule-strong: oklch(0.34 0.006 70);
+		--color-ring: oklch(0.6 0.01 70);
 
-		--color-primary: oklch(0.714 0.154 59);
-		--color-primary-fg: oklch(0.21 0.008 67);
-		--color-accent: oklch(0.714 0.154 59);
+		--color-primary: oklch(0.74 0.15 62);
+		--color-primary-fg: oklch(0.18 0.01 62);
+		--color-primary-ink: oklch(0.74 0.15 62);
+		--color-accent: oklch(0.74 0.15 62);
 
-		--color-breaking: oklch(0.72 0.19 25);
-		--color-breaking-bg: oklch(0.637 0.237 25.331 / 0.16);
+		--color-breaking: oklch(0.7 0.17 28);
+		--color-breaking-bg: oklch(0.654 0.176 30 / 0.16);
 		--color-notable: oklch(0.8 0.15 84);
-		--color-notable-bg: oklch(0.8 0.15 84 / 0.14);
-		--color-stable: oklch(0.74 0.15 160);
-		--color-stable-bg: oklch(0.696 0.17 162.48 / 0.16);
-		--color-rc: oklch(0.72 0.14 255);
-		--color-rc-bg: oklch(0.623 0.214 259.815 / 0.16);
+		--color-notable-bg: oklch(0.8 0.15 84 / 0.12);
+		--color-stable: oklch(0.72 0.14 151);
+		--color-stable-bg: oklch(0.658 0.134 151 / 0.16);
+		--color-rc: oklch(0.72 0.15 254);
+		--color-rc-bg: oklch(0.693 0.165 254 / 0.16);
+
+		--raised-shade: oklch(0 0 0 / 35%);
 	}
 }
 
@@ -85,7 +112,7 @@
  */
 @layer base {
 	html {
-		background: var(--color-paper);
+		background: var(--color-canvas);
 		color: var(--color-ink);
 		font-family: var(--font-sans);
 		-webkit-font-smoothing: antialiased;
@@ -94,52 +121,54 @@
 
 	body {
 		margin: 0;
-		font-size: 14.5px;
+		font-size: 14px;
 		line-height: 1.6;
 	}
 
 	/*
 	 * Identifiers are the site's real content and stay ink; amber is for the link
 	 * in a sentence, the way Maple's docs set prose links. Hover brings any link
-	 * up to amber so the affordance is the same everywhere.
+	 * up to amber so the affordance is the same everywhere. State is instant:
+	 * a colour never eases, only things that move do.
 	 */
 	a {
 		color: inherit;
 		text-decoration-color: var(--color-rule-strong);
 		text-underline-offset: 3px;
-		transition:
-			color 120ms ease,
-			text-decoration-color 120ms ease;
 	}
 
-	a:hover {
-		color: var(--color-primary);
+	a:hover,
+	a:active {
+		color: var(--color-primary-ink);
 		text-decoration-color: currentColor;
 	}
 
 	p a {
-		color: var(--color-primary);
-		text-decoration-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+		color: var(--color-primary-ink);
+		text-decoration-color: color-mix(in oklab, var(--color-primary-ink) 40%, transparent);
 	}
 
-	p a:hover {
+	p a:hover,
+	p a:active {
 		color: var(--color-ink);
 		text-decoration-color: currentColor;
 	}
 
+	/* An opaque pair, so a selection reads the same over muted text or a tone. */
 	::selection {
-		background: color-mix(in oklab, var(--color-primary) 28%, transparent);
+		background: var(--color-primary);
+		color: var(--color-primary-fg);
 	}
 
 	:focus-visible {
-		outline: 2px solid var(--color-primary);
+		outline: 2px solid var(--color-ring);
 		outline-offset: 2px;
 	}
 }
 
 /* Anchored headings should not hide under the sticky header. */
 [id] {
-	scroll-margin-top: 5rem;
+	scroll-margin-top: 4.5rem;
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -147,14 +176,30 @@
    a page can be read against apps/landing without a key.
    ────────────────────────────────────────────────────────────── */
 
-/* Section label: mono, small, tracked - the docs sidebar heading. */
+/* A quiet label over a group, a stat or a field: sentence case, no tracking. */
 @utility eyebrow {
-	@apply m-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-muted;
+	@apply m-0 text-xs font-medium text-muted;
+}
+
+/* A block's heading on a reference page. */
+@utility section-head {
+	@apply m-0 text-sm font-semibold text-ink;
+}
+
+/* An uppercase machine tag: a span kind, a document status, an entity kind. */
+@utility tag {
+	@apply font-mono text-[10px] uppercase tracking-[0.08em] text-faint;
+}
+
+/* A headline number. Numbers read in Geist and line up with tabular figures;
+   mono is for machine text. */
+@utility stat-figure {
+	@apply m-0 text-[1.625rem] leading-none font-semibold tracking-[-0.01em] tabular-nums;
 }
 
 /* Page title: proportional, tight, one weight up from body. */
 @utility page-title {
-	@apply m-0 text-[1.65rem] leading-[1.2] font-semibold tracking-[-0.02em];
+	@apply m-0 text-2xl leading-[1.25] font-semibold tracking-tight;
 }
 
 /* Section heading on the home page. */
@@ -164,17 +209,17 @@
 
 /* A glyph in a small bordered square, above a section heading. */
 @utility icon-tile {
-	@apply flex h-9 w-9 items-center justify-center rounded-lg border border-rule bg-surface text-ink;
+	@apply flex h-9 w-9 items-center justify-center rounded-lg border border-rule bg-surface text-ink shadow-raised;
 }
 
-/* Text field: 36px tall, 8px radius, ring on focus. */
+/* Text field: 34px tall, 8px radius, a soft halo on focus that its border carries. */
 @utility field {
-	@apply h-9 rounded-lg border border-rule bg-surface px-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-faint focus:border-rule-strong focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:outline-none;
+	@apply h-8.5 rounded-lg border border-rule-strong bg-paper px-3 text-[13px] text-ink shadow-raised outline-none placeholder:text-faint focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/24 focus-visible:outline-none;
 }
 
 /* Filter toggle: an outline button whose "on" state is a filled surface. */
 @utility chip-btn {
-	@apply inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-rule bg-transparent px-2.5 text-[13px] text-muted transition-colors hover:border-rule-strong hover:text-ink data-[on]:border-rule-strong data-[on]:bg-surface data-[on]:font-medium data-[on]:text-ink;
+	@apply inline-flex h-7.5 cursor-pointer items-center gap-1.5 rounded-lg border border-rule bg-transparent px-2.5 text-[13px] text-muted hover:bg-elevated/50 hover:text-ink active:bg-elevated/50 active:text-ink data-[on]:border-rule-strong data-[on]:bg-elevated data-[on]:font-medium data-[on]:text-ink;
 }
 
 /* Callout: a bordered panel, tinted by its caller. */
@@ -184,7 +229,7 @@
 
 /* Hairline grid: cells separated by 1px of border, no doubled rules. */
 @utility hairline-grid {
-	@apply grid gap-px overflow-hidden rounded-xl border border-rule bg-rule;
+	@apply grid gap-px overflow-hidden rounded-xl border border-rule bg-rule shadow-raised;
 }
 
 @utility hairline-cell {
@@ -198,7 +243,7 @@
 
 /* Copy button pinned to the corner of a code block. */
 @utility copy-btn {
-	@apply cursor-pointer rounded-[5px] border border-rule bg-surface px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-muted transition-colors hover:border-rule-strong hover:text-ink;
+	@apply cursor-pointer rounded-md border border-rule bg-surface px-2 py-[3px] text-[11px] font-medium text-muted shadow-raised hover:border-rule-strong hover:text-ink active:border-rule-strong active:text-ink;
 }
 
 /* Search-term highlight: a tint, never a colour of its own. */
@@ -223,8 +268,7 @@ dialog.palette {
 	position: fixed;
 }
 dialog.palette::backdrop {
-	background: color-mix(in oklab, var(--color-deep) 70%, transparent);
-	backdrop-filter: blur(2px);
+	background: oklch(0 0 0 / 32%);
 }
 dialog.palette[open] {
 	display: block;

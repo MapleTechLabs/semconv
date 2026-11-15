@@ -9,7 +9,7 @@ import { SITE } from "../lib/site.ts"
 interface Props {
 	title: string
 	description: string
-	/** Rendered small and uppercase above the page heading. */
+	/** Rendered small above the page heading. */
 	kicker?: string
 	wide?: boolean
 }
@@ -52,23 +52,23 @@ const isActive = (href: string) => path.startsWith(href)
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="alternate" type="application/rss+xml" title={`${SITE.name}: all changes`} href="/feed.xml" />
 	</head>
-	<body class="min-h-screen antialiased">
+	<body class="min-h-screen bg-canvas antialiased">
 		<a
 			href="#main"
-			class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-md focus:border focus:border-primary focus:bg-surface focus:px-3 focus:py-2 focus:text-[13px]"
+			class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-md focus:border focus:border-ring focus:bg-surface focus:px-3 focus:py-2 focus:text-[13px]"
 		>
 			Skip to content
 		</a>
 
-		<header class="sticky top-0 z-20 border-b border-rule bg-paper/95 backdrop-blur-md">
-			<div class:list={["mx-auto flex flex-wrap items-stretch gap-x-5 px-5", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}>
-				<a href="/" class="flex h-14 shrink-0 items-center gap-2 no-underline hover:text-primary">
-					<SemconvMark class="h-5 w-5 text-primary" />
-					<span class="text-[15px] font-semibold tracking-[-0.01em] text-ink">{SITE.name}</span>
+		<header class="sticky top-0 z-20 border-b border-rule bg-canvas md:border-b-0">
+			<div class:list={["mx-auto flex flex-wrap items-center gap-x-4 px-5 md:px-7", wide ? "max-w-[87rem]" : "max-w-[63rem]"]}>
+				<a href="/" class="flex h-12 shrink-0 items-center gap-2 no-underline">
+					<SemconvMark class="h-[18px] w-[18px] text-(--color-primary)" />
+					<span class="text-sm font-semibold tracking-tight text-ink">{SITE.name}</span>
 				</a>
 
 				<nav
-					class="site-nav order-last -mx-5 flex w-[calc(100%+2.5rem)] items-stretch gap-1 overflow-x-auto border-t border-rule/60 px-3 md:order-none md:mx-0 md:w-auto md:border-0 md:px-0"
+					class="site-nav order-last -mx-5 flex w-[calc(100%+2.5rem)] items-center gap-0.5 overflow-x-auto border-t border-rule px-3 py-1.5 md:order-none md:mx-0 md:w-auto md:border-0 md:px-0 md:py-0"
 					aria-label="Site"
 				>
 					{
@@ -79,25 +79,21 @@ const isActive = (href: string) => path.startsWith(href)
 									href={item.href}
 									aria-current={active ? "page" : undefined}
 									class:list={[
-										"group relative flex h-10 shrink-0 items-center whitespace-nowrap px-2.5 text-[13px] no-underline transition-colors md:h-14",
-										active ? "font-medium text-ink" : "text-muted hover:text-ink",
+										"flex h-7 shrink-0 items-center whitespace-nowrap rounded-md px-2.5 text-[13px] no-underline",
+										active
+											? "bg-canvas-accent font-medium text-ink hover:text-ink active:text-ink"
+											: "text-muted hover:bg-canvas-accent/50 hover:text-ink active:bg-canvas-accent/50 active:text-ink",
 									]}
 								>
 									{item.label}
-									<span
-										class:list={[
-											"pointer-events-none absolute inset-x-1 -bottom-px h-0.5 bg-primary transition-opacity",
-											active ? "opacity-100" : "opacity-0 group-hover:opacity-30",
-										]}
-									/>
 								</a>
 							)
 						})
 					}
 				</nav>
 
-				<form action="/search" method="get" role="search" class="ml-auto flex h-14 items-center">
-					<label class="relative flex h-7 w-40 items-center rounded-lg border border-rule text-muted transition-colors focus-within:border-rule-strong hover:border-rule-strong sm:w-56">
+				<form action="/search" method="get" role="search" class="ml-auto flex h-12 items-center">
+					<label class="relative flex h-7.5 w-40 items-center rounded-lg border border-rule-strong bg-paper text-muted shadow-raised focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/24 sm:w-56">
 						<Icon name="magnifier" class="pointer-events-none absolute left-2 h-3.5 w-3.5" />
 						<input
 							id="site-search"
@@ -108,30 +104,39 @@ const isActive = (href: string) => path.startsWith(href)
 							aria-label="Search"
 							autocomplete="off"
 							spellcheck="false"
-							class="h-full w-full bg-transparent pl-7 pr-7 text-xs text-ink outline-none placeholder:text-muted"
+							class="h-full w-full bg-transparent pl-7 pr-7 text-[13px] text-ink outline-none placeholder:text-faint"
 						/>
-						<kbd class="pointer-events-none absolute right-2 hidden font-mono text-[10px] font-medium tracking-widest text-muted/70 sm:inline" data-palette-kbd>⌘K</kbd>
+						<kbd class="pointer-events-none absolute right-2 hidden font-mono text-[10px] font-medium text-faint sm:inline" data-palette-kbd>⌘K</kbd>
 					</label>
 				</form>
 			</div>
+			{/* The page panel's top edge rides under the bar, so the page keeps its corners while it scrolls. */}
+			<div class="mx-2 hidden h-3 rounded-t-xl border border-b-0 border-rule bg-paper md:block" aria-hidden="true"></div>
 		</header>
 
 		<Palette />
 
-		<main id="main" tabindex="-1" class:list={["mx-auto px-5 py-10 outline-none", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}>
-			<slot />
-		</main>
+		{/* The page sits on the canvas as an inset panel, the way Maple's dashboard sits beside its sidebar. */}
+		<div class="bg-paper md:mx-2 md:rounded-b-xl md:border md:border-t-0 md:border-rule md:shadow-raised">
+			<main
+				id="main"
+				tabindex="-1"
+				class:list={["mx-auto min-h-[calc(100svh-15rem)] px-5 pt-8 pb-16 outline-none md:pt-6", wide ? "max-w-[86rem]" : "max-w-[62rem]"]}
+			>
+				<slot />
+			</main>
+		</div>
 
-		<footer class="mt-20 border-t border-rule bg-deep">
+		<footer class="border-t border-rule md:border-t-0">
 			<div
 				class:list={[
-					"mx-auto flex flex-col gap-8 px-5 py-10 text-[13px] text-muted md:flex-row md:items-start md:justify-between",
-					wide ? "max-w-[86rem]" : "max-w-[62rem]",
+					"mx-auto flex flex-col gap-8 px-5 py-10 text-[13px] text-muted md:flex-row md:items-start md:justify-between md:px-7",
+					wide ? "max-w-[87rem]" : "max-w-[63rem]",
 				]}
 			>
 				<div class="max-w-[48ch]">
 					<a href="/" class="inline-flex items-center gap-2 no-underline">
-						<SemconvMark class="h-[18px] w-[18px] text-primary" />
+						<SemconvMark class="h-[18px] w-[18px] text-(--color-primary)" />
 						<span class="text-sm font-medium text-ink">{SITE.name}</span>
 					</a>
 					<p class="mt-3 mb-0 text-xs leading-relaxed">
@@ -145,7 +150,7 @@ const isActive = (href: string) => path.startsWith(href)
 
 				<div class="flex flex-wrap gap-x-12 gap-y-6">
 					<div>
-						<h4 class="eyebrow mb-3 text-ink">Machine readable</h4>
+						<h4 class="eyebrow mb-3">Machine readable</h4>
 						<ul class="m-0 list-none space-y-2 p-0 text-xs">
 							<li><a href="/llms.txt" class="font-mono no-underline hover:underline">llms.txt</a></li>
 							<li><a href="/feed.xml" class="no-underline hover:underline">RSS feed</a></li>
@@ -153,7 +158,7 @@ const isActive = (href: string) => path.startsWith(href)
 						</ul>
 					</div>
 					<div>
-						<h4 class="eyebrow mb-3 text-ink">Built by</h4>
+						<h4 class="eyebrow mb-3">Built by</h4>
 						<a href={SITE.builderUrl} class="inline-flex items-center gap-1.5 text-xs no-underline hover:underline">
 							<MapleMark class="h-[13px] w-[13px] text-[#E86F00]" />
 							{SITE.builder}

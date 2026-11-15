@@ -95,7 +95,7 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 								style={`left:${bar.left.toFixed(2)}%`}
 							>
 								<span
-									class="flex w-1 flex-col rounded-t-[1px] bg-muted/60 transition-colors group-hover:bg-ink group-focus-visible:bg-ink"
+									class="flex w-1 flex-col rounded-t-[1px] bg-muted/60 group-hover:bg-ink group-focus-visible:bg-ink"
 									style={`height:${bar.height.toFixed(1)}%`}
 								>
 									{bar.breakingShare > 0 && (
@@ -123,7 +123,7 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 				{
 					ticks.map((tick, i) => (
 						<span
-							class:list={["absolute top-1.5 font-mono text-[10.5px] whitespace-nowrap text-faint", i % 2 === 1 && "max-sm:hidden"]}
+							class:list={["absolute top-1.5 text-[10.5px] whitespace-nowrap text-faint tabular-nums", i % 2 === 1 && "max-sm:hidden"]}
 							style={`left:${tick.left.toFixed(2)}%`}
 						>
 							{tick.label}
@@ -136,16 +136,16 @@ for (const d = new Date(start); d.getTime() <= end; d.setUTCMonth(d.getUTCMonth(
 	<div
 		data-tooltip
 		role="tooltip"
-		class="pointer-events-none absolute top-0 left-0 z-10 hidden w-80 max-w-[calc(100%-1rem)] rounded-lg border border-rule-strong bg-elevated px-3 py-2 text-[12.5px] whitespace-nowrap"
+		class="pointer-events-none absolute top-0 left-0 z-10 hidden w-80 max-w-[calc(100%-1rem)] rounded-lg border border-rule-strong bg-elevated px-3 py-2 text-[12.5px] whitespace-nowrap shadow-raised"
 	>
 		<div class="text-faint" data-tt-lane></div>
 		<div class="mt-0.5 flex items-baseline justify-between gap-3">
 			<span class="font-mono text-ink" data-tt-version></span>
-			<span class="font-mono text-[11px] text-faint" data-tt-date></span>
+			<span class="text-[11px] text-faint" data-tt-date></span>
 		</div>
 		<div class="mt-1.5 flex gap-3 border-t border-rule pt-1.5">
-			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-breaking"></span><span class="font-mono text-ink" data-tt-breaking></span> breaking</span>
-			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-muted/60"></span><span class="font-mono text-ink" data-tt-notable></span> notable</span>
+			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-breaking"></span><span class="font-medium text-ink tabular-nums" data-tt-breaking></span> breaking</span>
+			<span class="inline-flex items-center gap-1.5 text-muted"><span class="inline-block h-2 w-1 bg-muted/60"></span><span class="font-medium text-ink tabular-nums" data-tt-notable></span> notable</span>
 		</div>
 		<ul class="m-0 mt-2 flex list-none flex-col gap-1 p-0 empty:hidden" data-tt-changes></ul>
 	</div>

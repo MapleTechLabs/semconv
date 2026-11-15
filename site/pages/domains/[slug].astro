@@ -112,15 +112,15 @@ const signalCount = domain.spans.length + domain.events.length + domain.entities
 
 // A signal of its own has no metrics or spans to count; its messages are what it emits.
 const stats = [
-	{ value: domain.attributes.length, label: "attributes" },
+	{ value: domain.attributes.length, label: "Attributes" },
 	...(wire
-		? [{ value: wire.messages.filter((m) => m.kind === "message").length, label: "messages" }]
+		? [{ value: wire.messages.filter((m) => m.kind === "message").length, label: "Messages" }]
 		: [
-				{ value: domain.metrics.length, label: "metrics" },
-				{ value: signalCount, label: "signals" },
+				{ value: domain.metrics.length, label: "Metrics" },
+				{ value: signalCount, label: "Signals" },
 			]),
-	{ value: domain.stable, label: "stable" },
-	{ value: domain.deprecated, label: "deprecated" },
+	{ value: domain.stable, label: "Stable" },
+	{ value: domain.deprecated, label: "Deprecated" },
 ]
 
 const description = wire
@@ -157,8 +157,8 @@ const description = wire
 		{
 			stats.map((stat) => (
 				<div class="m-0">
-					<dt class="text-[12px] uppercase tracking-wide text-faint">{stat.label}</dt>
-					<dd class="m-0 font-mono text-[1.5rem] leading-none font-medium">{stat.value}</dd>
+					<dt class="eyebrow">{stat.label}</dt>
+					<dd class="stat-figure mt-1.5">{stat.value}</dd>
 				</div>
 			))
 		}
@@ -171,7 +171,7 @@ const description = wire
 	{
 		rules && (
 			<section id="rules" class="mt-9">
-				<h2 class="eyebrow">Rules</h2>
+				<h2 class="section-head">Rules</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
 					What the lists below cannot show: these rules live in{" "}
 					<span set:html={inlineCode(rules.where ?? "the convention's prose, not in its registry")} />. Paraphrased from{" "}
@@ -214,7 +214,7 @@ const description = wire
 	{
 		wire && (
 			<section id="wire" class="mt-10">
-				<h2 class="eyebrow">Wire format</h2>
+				<h2 class="section-head">Wire format</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
 					{wire.def.what} are a signal of their own, so what this domain emits is defined by a{" "}
 					<code class="font-mono text-[0.92em]">.proto</code> package, not by spans or metrics in the registry.
@@ -223,7 +223,7 @@ const description = wire
 				<dl class="mt-4 m-0 grid gap-x-8 gap-y-3 sm:grid-cols-3">
 					{wireFacts.map((fact) => (
 						<div class="m-0 min-w-0">
-							<dt class="text-[12px] uppercase tracking-wide text-faint">{fact.label}</dt>
+							<dt class="eyebrow">{fact.label}</dt>
 							<dd class="m-0 mt-0.5 font-mono text-[13px] break-all">{fact.value}</dd>
 						</div>
 					))}
@@ -311,7 +311,7 @@ const description = wire
 	{
 		signalGroups.length > 0 && (
 			<section id="signals" class="mt-9">
-				<h2 class="eyebrow">Signals</h2>
+				<h2 class="section-head">Signals</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
 					What this domain emits, and the attributes each one carries, most strongly required first. An
 					attribute marked <span class="text-breaking">*</span> is required on that signal;{" "}
@@ -321,7 +321,7 @@ const description = wire
 					{signalGroups.map((group) => (
 						<div>
 							<h3 class="m-0 text-[13px] font-semibold text-muted">
-								{group.label} <span class="font-mono font-normal text-faint">{group.signals.length}</span>
+								{group.label} <span class="font-normal text-faint tabular-nums">{group.signals.length}</span>
 							</h3>
 							<ul class="mt-1.5 m-0 list-none p-0">
 								{group.signals.map((signal) => (
@@ -331,7 +331,7 @@ const description = wire
 												{signal.name.replace(/^(span|event|entity)\./, "")}
 											</span>
 											{signal.spanKind && (
-												<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">{signal.spanKind}</span>
+												<span class="tag">{signal.spanKind}</span>
 											)}
 											<Pill
 												label={
@@ -376,8 +376,8 @@ const description = wire
 	{
 		domain.metrics.length > 0 && (
 			<section id="metrics" class="mt-10">
-				<h2 class="eyebrow">
-					Metrics <span class="font-mono normal-case tracking-normal">{domain.metrics.length}</span>
+				<h2 class="section-head">
+					Metrics <span class="font-normal text-faint tabular-nums">{domain.metrics.length}</span>
 				</h2>
 				<ul class="mt-2 m-0 list-none p-0">
 					{domain.metrics.map((metric) => (
@@ -403,7 +403,7 @@ const description = wire
 	}
 
 	<section id="specification" class="mt-11">
-		<h2 class="eyebrow">Specification</h2>
+		<h2 class="section-head">Specification</h2>
 
 		{
 			domain.governance.length > 0 && (
@@ -430,7 +430,7 @@ const description = wire
 				<div class="mt-6">
 					<h3 class="m-0 text-[13px] font-semibold text-muted">
 						{wire ? "Requirements that bind this signal" : "Requirements that name this domain"}{" "}
-						<span class="font-mono font-normal text-faint">{domain.requirements.length}</span>
+						<span class="font-normal text-faint tabular-nums">{domain.requirements.length}</span>
 					</h3>
 					<ul class="mt-2 m-0 list-none p-0">
 						{shownRequirements.map(({ statement, section }) => (
@@ -443,7 +443,7 @@ const description = wire
 									<a href={sectionUrl(section.path, section.anchor)} class="text-[12.5px] text-muted">
 										{section.title}
 									</a>
-									<span class="font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">{section.status}</span>
+									<span class="tag">{section.status}</span>
 								</div>
 								<p class="mt-1 mb-0 text-[13.5px] max-w-[80ch]" set:html={inlineCode(statement.text)} />
 							</li>
@@ -486,8 +486,8 @@ const description = wire
 	</section>
 
 	<section id="attributes" class="mt-11">
-		<h2 class="eyebrow">
-			Attributes <span class="font-mono normal-case tracking-normal">{domain.attributes.length}</span>
+		<h2 class="section-head">
+			Attributes <span class="font-normal text-faint tabular-nums">{domain.attributes.length}</span>
 		</h2>
 		<div class="mt-4 flex flex-col gap-7">
 			{
@@ -539,7 +539,7 @@ const description = wire
 	{
 		domain.changes.length > 0 && (
 			<section id="changes" class="mt-11">
-				<h2 class="eyebrow">Recent changes</h2>
+				<h2 class="section-head">Recent changes</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted">
 					Breaking and notable changes to this domain across the last{" "}
 					{Math.min(6, data.semconv.diffs.length)} semantic-conventions releases.

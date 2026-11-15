@@ -5,9 +5,11 @@ interface Props {
 	title?: string
 }
 const { label, class: cls = "", title } = Astro.props
+// Sentence case: labels arrive as `renamed` or `field added`, and nothing uppercases them now.
+const text = label.charAt(0).toUpperCase() + label.slice(1)
 ---
 
 <span
-	class:list={["inline-flex h-[18px] shrink-0 items-center rounded-[4px] px-1.5 font-mono text-[10.5px] font-medium uppercase leading-none tracking-[0.06em] whitespace-nowrap", cls]}
-	title={title}>{label}</span
+	class:list={["inline-flex h-[18px] shrink-0 items-center rounded-sm px-1.5 text-[11px] font-medium leading-none whitespace-nowrap", cls]}
+	title={title}>{text}</span
 >

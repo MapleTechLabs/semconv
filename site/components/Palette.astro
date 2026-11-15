@@ -109,7 +109,7 @@
 		a.href = entry.url
 		a.setAttribute("role", "option")
 		a.className =
-			"palette-row mx-1.5 flex items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 no-underline transition-colors hover:bg-elevated aria-selected:bg-elevated"
+			"palette-row mx-1.5 flex items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 no-underline hover:bg-elevated aria-selected:bg-elevated"
 		const id = el("span", entry.type === "page" || entry.type === "domain" ? "shrink-0 text-[13.5px] font-medium text-ink" : "shrink-0 font-mono text-[13px] font-medium text-ink")
 		id.innerHTML = highlight(entry.id, terms)
 		a.append(id)
@@ -118,7 +118,7 @@
 		text.innerHTML = highlight(entry.text, terms)
 		a.append(text)
 		if (entry.meta && entry.type !== "page") {
-			const meta = el("span", "ml-auto hidden shrink-0 font-mono text-[10.5px] text-faint sm:inline", entry.meta.split(" · ")[0] ?? "")
+			const meta = el("span", "ml-auto hidden shrink-0 text-[11px] text-faint sm:inline", entry.meta.split(" · ")[0] ?? "")
 			a.append(meta)
 		}
 		a.addEventListener("click", () => rememberQuery(input.value))
@@ -130,7 +130,7 @@
 		a.href = href
 		a.setAttribute("role", "option")
 		a.className =
-			"palette-row mx-1.5 flex items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-[13px] no-underline transition-colors hover:bg-elevated aria-selected:bg-elevated"
+			"palette-row mx-1.5 flex items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-[13px] no-underline hover:bg-elevated aria-selected:bg-elevated"
 		a.append(el("span", "text-ink", label), el("span", "text-[12px] text-muted", hint))
 		return a
 	}
@@ -155,7 +155,7 @@
 					b.type = "button"
 					b.setAttribute("role", "option")
 					b.className =
-						"palette-row mx-1.5 flex w-[calc(100%-0.75rem)] items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-left font-mono text-[13px] text-ink transition-colors hover:bg-elevated aria-selected:bg-elevated"
+						"palette-row mx-1.5 flex w-[calc(100%-0.75rem)] items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-left font-mono text-[13px] text-ink hover:bg-elevated aria-selected:bg-elevated"
 					b.textContent = q
 					b.addEventListener("click", () => {
 						input.value = q
@@ -178,7 +178,7 @@
 				b.type = "button"
 				b.setAttribute("role", "option")
 				b.className =
-					"palette-row mx-1.5 flex w-[calc(100%-0.75rem)] items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-elevated aria-selected:bg-elevated"
+					"palette-row mx-1.5 flex w-[calc(100%-0.75rem)] items-baseline gap-x-3 rounded-lg px-2.5 py-1.5 text-left hover:bg-elevated aria-selected:bg-elevated"
 				b.append(el("span", "font-mono text-[13px] text-ink", q), el("span", "text-[12px] text-muted", hint))
 				b.addEventListener("click", () => {
 					input.value = q

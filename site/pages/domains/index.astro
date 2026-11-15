@@ -44,7 +44,7 @@ const total = domains.reduce((n, domain) => n + domain.attributes.length, 0)
 						<a href={`/domains/${domain.slug}`} class="no-underline hover:underline">
 							{domain.title}
 						</a>
-						<span class="font-mono text-[12.5px] font-normal text-faint">{domain.attributes.length} attributes</span>
+						<span class="text-[12.5px] font-normal text-faint tabular-nums">{domain.attributes.length} attributes</span>
 					</h2>
 					<p class="mt-1 mb-0 font-mono text-[12px] text-muted truncate">
 						{domain.namespaces

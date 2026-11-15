@@ -187,7 +187,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 	{
 		attribute.examples.length > 0 && (
 			<section class="mt-7">
-				<h2 class="eyebrow">Examples</h2>
+				<h2 class="section-head">Examples</h2>
 				<ul class="mt-2 m-0 flex flex-wrap gap-2 list-none p-0">
 					{attribute.examples.map((example) => (
 						<li class="font-mono text-[13px] rounded bg-elevated px-2 py-1">{example}</li>
@@ -200,7 +200,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 	{
 		attribute.enumMembers && attribute.enumMembers.length > 0 && (
 			<section class="mt-8">
-				<h2 class="eyebrow">
+				<h2 class="section-head">
 					Values ({attribute.enumMembers.length})
 				</h2>
 				<ul class="mt-2 m-0 list-none p-0">
@@ -221,7 +221,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 	{
 		usage.size > 0 && (
 			<section class="mt-8">
-				<h2 class="eyebrow">Used by</h2>
+				<h2 class="section-head">Used by</h2>
 				<div class="mt-2 flex flex-col gap-4">
 					{[...usage.entries()].map(([kind, entries]) => (
 						<div>
@@ -251,7 +251,7 @@ const paragraphs = (text: string) => text.split(/\n{2,}/).filter((p) => p.trim()
 	}
 
 	<section class="mt-9">
-		<h2 class="eyebrow">History</h2>
+		<h2 class="section-head">History</h2>
 		<ol class="mt-3 m-0 list-none p-0 border-l border-rule">
 			{
 				events.map((event) => (
