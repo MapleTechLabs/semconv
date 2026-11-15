@@ -62,12 +62,81 @@ const stripNoise = (markdown: string) =>
 		.replace(/```[\s\S]*?```/g, "")
 		.replace(/<!--[\s\S]*?-->/g, "")
 
-const normalizeText = (text: string) =>
+/**
+ * Emphasis markers come off; identifiers keep their underscores. A `_` or `*`
+ * is emphasis only as a matched pair around a phrase, never inside a word and
+ * never inside a code span: `build_id` once lost its underscore to the `_` of
+ * another identifier in the same paragraph.
+ */
+const stripEmphasis = (text: string) =>
 	text
-		.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-		.replace(/[*_]{1,2}([^*_]+)[*_]{1,2}/g, "$1")
-		.replace(/\s+/g, " ")
-		.trim()
+		.split(/(`+[^`]*`+)/)
+		.map((part, i) =>
+			i % 2 === 1
+				? part
+				: part
+						.replace(/(?<![A-Za-z0-9_])__(?=\S)(.+?)(?<=\S)__(?![A-Za-z0-9_])/g, "$1")
+						.replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, "$1")
+						.replace(/(?<![A-Za-z0-9_])_(?=\S)(.+?)(?<=\S)_(?![A-Za-z0-9_])/g, "$1")
+						.replace(/(?<![A-Za-z0-9*])\*(?=\S)([^*]+?)(?<=\S)\*(?![A-Za-z0-9*])/g, "$1"),
+		)
+		.join("")
+
+const normalizeText = (text: string) =>
+	stripEmphasis(text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\s+/g, " ")).trim()
+
+const LIST_MARKER = /^(\s*)(?:[-*+]|\d+\.)\s+/
+
+interface Block {
+	readonly text: string
+	/** Indentation of a list item's marker; -1 for a paragraph, so any item sits under it. */
+	readonly indent: number
+}
+
+/** Paragraphs and list items, in order. An item is its own block, never merged with its neighbours. */
+function blocks(body: string): Block[] {
+	return body
+		.split(/\n\s*\n|\n(?=\s*[-*+]\s)|\n(?=\s*\d+\.\s)/)
+		.map((raw) => {
+			const marker = raw.match(LIST_MARKER)
+			return { text: normalizeText(raw.replace(LIST_MARKER, "")), indent: marker ? (marker[1] as string).length : -1 }
+		})
+		.filter((block) => block.text.length > 0)
+}
+
+/**
+ * A sentence ends at ".!?" followed by whitespace and something that starts a
+ * new one. The negative lookbehind keeps the abbreviations the spec leans on --
+ * "e.g. (see below)" was otherwise split mid-clause.
+ */
+const splitSentences = (text: string) =>
+	text
+		.split(/(?<!\b(?:e\.g|i\.e|etc|vs|cf|resp|approx|Fig|no|No)\.)(?<=[.!?])\s+(?=[A-Z`[(])/)
+		.map((sentence) => sentence.trim())
+		.filter((sentence) => sentence.length > 0)
+
+/**
+ * The list a lead-in introduces. "MUST have at least one of the following:" is
+ * no requirement without the items under it, so they are folded into the
+ * sentence. An item that states a requirement itself stays its own statement,
+ * along with anything nested under it.
+ */
+function introducedItems(all: readonly Block[], at: number): string[] {
+	const lead = all[at] as Block
+	const items: string[] = []
+	let i = at + 1
+	while (i < all.length && (all[i] as Block).indent > lead.indent) {
+		const item = all[i] as Block
+		if (LEVEL_PATTERN.test(item.text)) {
+			i++
+			while (i < all.length && (all[i] as Block).indent > item.indent) i++
+			continue
+		}
+		items.push(item.text.replace(/[.;,]$/, ""))
+		i++
+	}
+	return items
+}
 
 /**
  * Splits a section body into candidate sentences. List items are treated as
@@ -75,23 +144,19 @@ const normalizeText = (text: string) =>
  * spec routinely expresses a requirement as a bullet.
  */
 function sentences(body: string): string[] {
-	const blocks = body
-		.split(/\n\s*\n|\n(?=\s*[-*+]\s)|\n(?=\s*\d+\.\s)/)
-		.map((block) => normalizeText(block.replace(/^\s*(?:[-*+]|\d+\.)\s*/, "")))
-		.filter((block) => block.length > 0)
-
-	return blocks.flatMap((block) =>
-		block
-			// A sentence ends at ".!?" followed by whitespace and something that
-			// starts a new one. The negative lookbehind keeps the abbreviations the
-			// spec leans on -- "e.g. (see below)" was otherwise split mid-clause.
-			.split(/(?<!\b(?:e\.g|i\.e|etc|vs|cf|resp|approx|Fig|no|No)\.)(?<=[.!?])\s+(?=[A-Z`[(])/)
-			.map((sentence) => sentence.trim())
-			.filter((sentence) => sentence.length > 0),
-	)
+	const all = blocks(body)
+	return all.flatMap((block, at) => {
+		const parts = splitSentences(block.text)
+		const last = parts.at(-1)
+		if (last?.endsWith(":") && LEVEL_PATTERN.test(last)) {
+			const items = introducedItems(all, at)
+			if (items.length > 0) parts[parts.length - 1] = `${last} ${items.join("; ")}`
+		}
+		return parts
+	})
 }
 
-function normativeStatements(body: string, sectionId: string): NormativeStatement[] {
+export function normativeStatements(body: string, sectionId: string): NormativeStatement[] {
 	const seen = new Set<string>()
 	const out: NormativeStatement[] = []
 

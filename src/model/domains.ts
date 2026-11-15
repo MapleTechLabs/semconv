@@ -100,7 +100,6 @@ const COMMON_PROTO = `${PROTO_AT}/opentelemetry/proto/common/v1/common.proto`
 /** The development version header is merged but in no release yet. */
 const OTLP_SPEC_MAIN = "https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md"
 const SEMCONV_PROFILES_DOC = "https://github.com/open-telemetry/semantic-conventions/blob/v1.45.0/docs/general/profiles.md"
-const SPEC_MAPPINGS_DOC = "https://github.com/open-telemetry/opentelemetry-specification/blob/v1.62.0/specification/profiles/mappings.md"
 
 export const DOMAINS: readonly DomainDef[] = [
 	{
@@ -293,13 +292,6 @@ export const DOMAINS: readonly DomainDef[] = [
 					level: "SHOULD",
 					text: "A sample's identity is `{stack_index, set_of(attribute_indices), link_index}`. Samples that share it are combined by appending to `values` and `timestamps_unix_nano`, and every sample in a profile uses the same shape.",
 					anchor: "L469-L489",
-				},
-				{
-					title: "A mapping names its binary by build id",
-					level: "MUST",
-					text: "Every `Mapping` carries at least one of `process.executable.build_id.gnu`, `process.executable.build_id.go` and `process.executable.build_id.htlhash`, and all three where possible. `htlhash` is recommended on every mapping because it needs no build id in the binary: the first 16 bytes of a SHA-256 over the file's first and last 4096 bytes and its length.",
-					anchor: "attributes",
-					doc: SPEC_MAPPINGS_DOC,
 				},
 				{
 					title: "Attribute keys stay unique where they are referenced",
