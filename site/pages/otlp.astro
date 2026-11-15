@@ -79,7 +79,8 @@ const breakingSoFar = data.proto.diffs.reduce((n, diff) => n + diff.counts.break
 			<p class="mt-3 mb-0 text-[13px] text-muted max-w-[68ch]">
 				No breaking change to a released wire definition across any tracked release. Every removal and
 				renumbering below happened inside a <code class="font-mono text-[0.92em]">v1development</code>{" "}
-				package, where the project has made no compatibility promise.
+				package, where the project has made no compatibility promise. The profiles ones are listed release by
+				release under <a href="/domains/profiling#wire">Profiling</a>.
 			</p>
 		)
 	}

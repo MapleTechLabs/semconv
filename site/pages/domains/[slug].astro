@@ -3,8 +3,8 @@ import ChangeList from "../../components/ChangeList.astro"
 import Pill from "../../components/Pill.astro"
 import Shell from "../../layouts/Shell.astro"
 import { catalog, SOURCE_REPO } from "../../../src/model/catalog.ts"
-import { buildDomains, DOMAINS } from "../../../src/model/domains.ts"
-import { attributeHref, inlineCode, severityClass, STABILITY_LABEL, stabilityClass } from "../../lib/format.ts"
+import { buildDomains, DOMAINS, ruleDocs, ruleUrl } from "../../../src/model/domains.ts"
+import { attributeHref, formatDate, inlineCode, kindLabel, severityClass, STABILITY_LABEL, stabilityClass } from "../../lib/format.ts"
 
 export function getStaticPaths() {
 	return DOMAINS.map((domain) => ({ params: { slug: domain.slug } }))
@@ -47,9 +47,60 @@ const sectionUrl = (path: string, anchor: string) =>
 const shownRequirements = domain.requirements.slice(0, 8)
 
 const rules = domain.def.rules
+const wire = domain.wire
+
+/** `blob/v1.11.1/opentelemetry/proto/common/v1/common.proto` -> `common.proto`. */
+const docName = (url: string) => url.split("/").pop() ?? url
+
+/** A proto comment's opening sentence, without the status and version markers that trail it. */
+const lead = (comment: string | undefined) =>
+	(comment ?? "")
+		.split(/\s*(?:Status: \[|\[Since )/)[0]
+		?.split(/(?<=\.)\s/)[0]
+		?.trim() ?? ""
+
+/** Messages under the file that defines them, in package order. */
+const wireFiles = wire
+	? [...new Set(wire.messages.map((m) => m.file))].map((file) => ({
+			file,
+			label: file.replace("opentelemetry/proto/", "").replace(/\.proto$/, ""),
+			messages: wire.messages.filter((m) => m.file === file),
+		}))
+	: []
+
+/** Wire changes counted in a sentence, where `kindLabel`'s chip wording has no plural. */
+const WIRE_KIND: Record<string, readonly [one: string, many: string]> = {
+	added: ["definition added", "definitions added"],
+	removed: ["definition removed", "definitions removed"],
+	"field-added": ["field added", "fields added"],
+	"field-removed": ["field removed", "fields removed"],
+	"field-renamed": ["field renamed", "fields renamed"],
+	"field-number-changed": ["field renumbered", "fields renumbered"],
+	"field-type-changed": ["field retyped", "fields retyped"],
+	"field-label-changed": ["cardinality change", "cardinality changes"],
+}
+
+/** "12 fields renumbered · 8 fields removed", most frequent first. */
+const byKind = (changes: readonly { readonly kind: string }[]) => {
+	const counts = new Map<string, number>()
+	for (const change of changes) counts.set(change.kind, (counts.get(change.kind) ?? 0) + 1)
+	return [...counts.entries()]
+		.sort((a, b) => b[1] - a[1])
+		.map(([kind, count]) => `${count} ${WIRE_KIND[kind]?.[count === 1 ? 0 : 1] ?? kindLabel(kind)}`)
+		.join(" · ")
+}
+
+const wireFacts = wire
+	? [
+			{ label: "OTLP/HTTP path", value: wire.def.httpPath },
+			{ label: "gRPC method", value: `${wire.def.grpcService.split(".").pop()}/Export` },
+			{ label: "Package", value: wire.def.packages[0] ?? "" },
+		]
+	: []
 
 const jump = [
 	rules && { href: "#rules", label: `Rules ${rules.items.length}` },
+	wire && { href: "#wire", label: "Wire format" },
 	signalGroups.length > 0 && { href: "#signals", label: "Signals" },
 	domain.metrics.length > 0 && { href: "#metrics", label: `Metrics ${domain.metrics.length}` },
 	{ href: "#specification", label: "Specification" },
@@ -57,15 +108,24 @@ const jump = [
 	domain.changes.length > 0 && { href: "#changes", label: "Recent changes" },
 ].filter((item): item is { href: string; label: string } => Boolean(item))
 
+const signalCount = domain.spans.length + domain.events.length + domain.entities.length
+
+// A signal of its own has no metrics or spans to count; its messages are what it emits.
 const stats = [
 	{ value: domain.attributes.length, label: "attributes" },
-	{ value: domain.metrics.length, label: "metrics" },
-	{ value: domain.spans.length + domain.events.length + domain.entities.length, label: "signals" },
+	...(wire
+		? [{ value: wire.messages.filter((m) => m.kind === "message").length, label: "messages" }]
+		: [
+				{ value: domain.metrics.length, label: "metrics" },
+				{ value: signalCount, label: "signals" },
+			]),
 	{ value: domain.stable, label: "stable" },
 	{ value: domain.deprecated, label: "deprecated" },
 ]
 
-const description = `${domain.title} in OpenTelemetry: ${domain.attributes.length} attributes, ${domain.metrics.length} metrics and ${domain.spans.length + domain.events.length + domain.entities.length} signals, with the specification requirements that bind them.`
+const description = wire
+	? `${domain.title} in OpenTelemetry: the ${wire.def.what.toLowerCase()} signal's ${domain.attributes.length} attributes, its wire format at OTLP v${data.proto.latest.version} and the rules that bind them.`
+	: `${domain.title} in OpenTelemetry: ${domain.attributes.length} attributes, ${domain.metrics.length} metrics and ${signalCount} signals, with the specification requirements that bind them.`
 ---
 
 <Shell title={domain.title} description={description} wide>
@@ -75,7 +135,10 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 
 	<div class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
 		<h1 class="page-title">{domain.title}</h1>
-		<span class="text-[13.5px] text-faint">as of v{data.semconv.latest.version}</span>
+		<span class="text-[13.5px] text-faint">
+			as of v{data.semconv.latest.version}
+			{wire && <>, OTLP v{data.proto.latest.version}</>}
+		</span>
 	</div>
 	<p class="mt-2 mb-0 text-muted max-w-[70ch]">{domain.blurb}</p>
 
@@ -110,9 +173,23 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 			<section id="rules" class="mt-9">
 				<h2 class="eyebrow">Rules</h2>
 				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
-					What the lists below cannot show: these rules live in the convention's prose, not in its registry.
-					Paraphrased from <a href={rules.doc} class="font-mono text-[12.5px]">{rules.doc.split("/blob/")[1]}</a>; the
-					upstream wording wins.
+					What the lists below cannot show: these rules live in{" "}
+					<span set:html={inlineCode(rules.where ?? "the convention's prose, not in its registry")} />. Paraphrased from{" "}
+					{ruleDocs(rules).length === 1 ? (
+						<a href={rules.doc} class="font-mono text-[12.5px]">
+							{rules.doc.split("/blob/")[1]}
+						</a>
+					) : (
+						ruleDocs(rules).map((doc, i) => (
+							<>
+								{i > 0 && ", "}
+								<a href={doc} class="font-mono text-[12.5px]" title={doc.split("/blob/")[1]}>
+									{docName(doc)}
+								</a>
+							</>
+						))
+					)}
+					; the upstream wording wins.
 				</p>
 				<ul class="mt-3 m-0 list-none p-0">
 					{rules.items.map((rule) => (
@@ -120,9 +197,9 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 							<div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
 								<Pill
 									label={rule.level}
-									class={rule.level === "MUST" ? severityClass("notable") : "text-muted bg-elevated"}
+									class={rule.level.startsWith("MUST") ? severityClass("notable") : "text-muted bg-elevated"}
 								/>
-								<a href={`${rules.doc}#${rule.anchor}`} class="text-[13.5px] font-medium text-ink no-underline hover:underline">
+								<a href={ruleUrl(rules, rule)} class="text-[13.5px] font-medium text-ink no-underline hover:underline">
 									{rule.title}
 								</a>
 							</div>
@@ -130,6 +207,103 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 						</li>
 					))}
 				</ul>
+			</section>
+		)
+	}
+
+	{
+		wire && (
+			<section id="wire" class="mt-10">
+				<h2 class="eyebrow">Wire format</h2>
+				<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
+					{wire.def.what} are a signal of their own, so what this domain emits is defined by a{" "}
+					<code class="font-mono text-[0.92em]">.proto</code> package, not by spans or metrics in the registry.
+				</p>
+
+				<dl class="mt-4 m-0 grid gap-x-8 gap-y-3 sm:grid-cols-3">
+					{wireFacts.map((fact) => (
+						<div class="m-0 min-w-0">
+							<dt class="text-[12px] uppercase tracking-wide text-faint">{fact.label}</dt>
+							<dd class="m-0 mt-0.5 font-mono text-[13px] break-all">{fact.value}</dd>
+						</div>
+					))}
+				</dl>
+
+				<div class="mt-7">
+					<h3 class="m-0 text-[13px] font-semibold text-muted">Compatibility by release</h3>
+					<p class="mt-1 mb-0 text-[13px] text-muted max-w-[70ch]">
+						{wire.lastIncompatible ? (
+							<>
+								Last changed incompatibly in v{wire.lastIncompatible.version}.{" "}
+								{wire.history.filter((r) => r.incompatible.length > 0).length} of the {wire.history.length} tracked
+								releases removed, renumbered or retyped fields. The binary format keys on field numbers, so a
+								sender and a receiver built against different releases do not fail: they decode the wrong fields.
+							</>
+						) : (
+							<>No tracked release has changed this format incompatibly.</>
+						)}
+					</p>
+					<ul class="mt-2 m-0 list-none p-0">
+						{wire.history.map((release) => (
+							<li class="grid gap-x-5 gap-y-1 sm:grid-cols-[minmax(0,11rem)_1fr] items-baseline border-b border-rule py-2">
+								<span class="flex items-baseline gap-x-2.5">
+									<a href={`/releases/proto/${release.version}`} class="font-mono text-[13.5px] font-medium no-underline hover:underline">
+										v{release.version}
+									</a>
+									{release.publishedAt && <span class="text-[12.5px] text-faint">{formatDate(release.publishedAt)}</span>}
+								</span>
+								<div class="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+									{release.incompatible.length > 0 ? (
+										<Pill label={`${release.incompatible.length} incompatible`} class={severityClass("notable")} />
+									) : (
+										<Pill label="compatible" class="text-muted bg-elevated" />
+									)}
+									<span class="text-[13px] text-muted">
+										{byKind(release.incompatible) ||
+											(release.compatible.length > 0 ? byKind(release.compatible) : "No change to these packages.")}
+									</span>
+								</div>
+							</li>
+						))}
+					</ul>
+				</div>
+
+				<div class="mt-7 flex flex-col gap-6">
+					{wireFiles.map((group) => (
+						<div>
+							<h3 class="m-0 text-[13.5px] font-semibold">
+								<a
+									href={`${SOURCE_REPO.proto}/blob/v${data.proto.latest.version}/${group.file}`}
+									class="font-mono no-underline hover:underline break-all"
+								>
+									{group.label}
+								</a>
+							</h3>
+							<ul class="mt-1.5 m-0 list-none p-0">
+								{group.messages.map((message) => (
+									<li class="grid grid-cols-1 sm:grid-cols-[minmax(0,16rem)_1fr] gap-x-5 gap-y-0.5 items-baseline border-b border-rule py-2">
+										<span class="font-mono text-[13.5px] font-medium break-all">{message.name.split(".").pop()}</span>
+										<div class="min-w-0">
+											{lead(message.comment) && <p class="m-0 text-[13px] text-muted">{lead(message.comment)}</p>}
+											{message.fields.length > 0 && (
+												<p class="m-0 mt-0.5 flex flex-wrap gap-x-2.5 gap-y-0.5 font-mono text-[12px] text-faint">
+													{message.fields.map((field) => (
+														<span>
+															{field.number} <span class="text-muted">{field.name}</span>
+														</span>
+													))}
+												</p>
+											)}
+										</div>
+									</li>
+								))}
+							</ul>
+						</div>
+					))}
+				</div>
+				<p class="mt-3 mb-0 text-[13px] text-muted">
+					Every signal's definitions are under <a href="/otlp">OTLP</a>.
+				</p>
 			</section>
 		)
 	}
@@ -255,7 +429,7 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 			shownRequirements.length > 0 ? (
 				<div class="mt-6">
 					<h3 class="m-0 text-[13px] font-semibold text-muted">
-						Requirements that name this domain{" "}
+						{wire ? "Requirements that bind this signal" : "Requirements that name this domain"}{" "}
 						<span class="font-mono font-normal text-faint">{domain.requirements.length}</span>
 					</h3>
 					<ul class="mt-2 m-0 list-none p-0">
@@ -321,7 +495,9 @@ const description = `${domain.title} in OpenTelemetry: ${domain.attributes.lengt
 					<div>
 						<h3 class="m-0 flex flex-wrap items-baseline gap-x-2.5 font-mono text-[13.5px] font-semibold">
 							{group.name}
-							<span class="font-sans text-[12px] font-normal text-faint">{group.count} attributes</span>
+							<span class="font-sans text-[12px] font-normal text-faint">
+								{group.count} {group.count === 1 ? "attribute" : "attributes"}
+							</span>
 						</h3>
 						<ul class="mt-1.5 m-0 list-none p-0">
 							{group.rows.map(({ attribute, registry }) => (

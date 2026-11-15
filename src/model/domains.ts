@@ -1,6 +1,6 @@
 import type { Catalog } from "./catalog.ts"
 import type { Change } from "./change.ts"
-import type { Attribute, MetricDef, NormativeStatement, SignalDef, SpecSection } from "./types.ts"
+import type { Attribute, MetricDef, NormativeStatement, ProtoMessage, SignalDef, SpecSection } from "./types.ts"
 
 /**
  * The topic layer the four repositories do not have.
@@ -37,26 +37,70 @@ export interface DomainDef {
 	 * signal and attribute lists alone would miss them. Each one cites its source.
 	 */
 	readonly rules?: DomainRules
+	/** Set when the domain is an OTLP signal of its own. */
+	readonly wire?: DomainWire
+}
+
+/**
+ * A domain that is a signal, not a subject carried on spans, metrics or events.
+ * The registry has no signal entries for it: what it emits is defined by its own
+ * specification area and its own `.proto` package.
+ */
+export interface DomainWire {
+	/** Directory under `specification/` that governs the signal. */
+	readonly area: string
+	/** "Profiles": what that area governs. */
+	readonly what: string
+	/** Proto packages, data model first, then the collector service. */
+	readonly packages: readonly string[]
+	/** Fully qualified gRPC service; its one method is `Export`. */
+	readonly grpcService: string
+	/** Default OTLP/HTTP path. */
+	readonly httpPath: string
 }
 
 export interface DomainRule {
 	readonly title: string
 	/** The strongest keyword in the upstream sentence. */
-	readonly level: "MUST" | "SHOULD" | "SHOULD NOT" | "MAY"
+	readonly level: "MUST" | "MUST NOT" | "SHOULD" | "SHOULD NOT" | "MAY"
 	/** Markdown with inline code, rendered through `inlineCode`. */
 	readonly text: string
-	/** Heading anchor in `DomainRules.doc`. */
+	/** Heading anchor in the document, or a line range (`L107-L112`) in a `.proto` file. */
 	readonly anchor: string
+	/** The document this rule paraphrases, when it is not `DomainRules.doc`. */
+	readonly doc?: string
 }
 
 export interface DomainRules {
 	/** Absolute URL of the upstream document the rules paraphrase. */
 	readonly doc: string
+	/** Where the rules live upstream, completing "these rules live in ...". */
+	readonly where?: string
 	readonly items: readonly DomainRule[]
 }
 
+/** The document a rule links to. */
+export const ruleUrl = (rules: DomainRules, rule: DomainRule) => `${rule.doc ?? rules.doc}#${rule.anchor}`
+
+/** Every document a domain's rules paraphrase, the default one first. */
+export const ruleDocs = (rules: DomainRules): readonly string[] => [
+	...new Set([rules.doc, ...rules.items.flatMap((rule) => (rule.doc ? [rule.doc] : []))]),
+]
+
 /** The GenAI registry is unreleased, so its prose is cited from the default branch. */
 const GENAI_MCP_DOC = "https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/mcp.md"
+
+/**
+ * The profiles rules are pinned to the releases they were written against, so
+ * each link shows the text it paraphrases even after upstream moves on.
+ */
+const PROTO_AT = "https://github.com/open-telemetry/opentelemetry-proto/blob/v1.11.1"
+const PROFILES_PROTO = `${PROTO_AT}/opentelemetry/proto/profiles/v1development/profiles.proto`
+const COMMON_PROTO = `${PROTO_AT}/opentelemetry/proto/common/v1/common.proto`
+/** The development version header is merged but in no release yet. */
+const OTLP_SPEC_MAIN = "https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md"
+const SEMCONV_PROFILES_DOC = "https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/general/profiles.md"
+const SPEC_MAPPINGS_DOC = "https://github.com/open-telemetry/opentelemetry-specification/blob/v1.62.0/specification/profiles/mappings.md"
 
 export const DOMAINS: readonly DomainDef[] = [
 	{
@@ -205,11 +249,100 @@ export const DOMAINS: readonly DomainDef[] = [
 			"cpython",
 			"dotnet",
 			"aspnetcore",
-			"pprof",
-			"profile",
 		],
 		aliases: ["kestrel", "cli"],
-		keywords: ["profile", "process"],
+		keywords: ["process"],
+	},
+	{
+		slug: "profiling",
+		title: "Profiling",
+		blurb: "The fourth signal: sampled stack traces and what they cost, in a format derived from pprof. Alpha in the specification, and on the wire still a development package with no compatibility promise.",
+		namespaces: ["profile", "pprof"],
+		keywords: ["profile", "profiles", "profiling"],
+		wire: {
+			area: "profiles",
+			what: "Profiles",
+			packages: ["opentelemetry.proto.profiles.v1development", "opentelemetry.proto.collector.profiles.v1development"],
+			grpcService: "opentelemetry.proto.collector.profiles.v1development.ProfilesService",
+			httpPath: "/v1development/profiles",
+		},
+		rules: {
+			doc: PROFILES_PROTO,
+			where: "comments in the `.proto` files, the OTLP specification and the convention's prose, not in the registry",
+			items: [
+				{
+					title: "Index 0 of every dictionary table is the zero value",
+					level: "MUST",
+					text: "Each table in `ProfilesDictionary` starts with its zero value (`\"\"` in `string_table`, `Location{}` in `location_table`), so an index of `0` means not set. For `link_table[0]`, prefer 16 and 8 zero bytes over empty ids: some codecs expect the full lengths.",
+					anchor: "L107-L112",
+				},
+				{
+					title: "No duplicate or orphaned dictionary entries",
+					level: "SHOULD NOT",
+					text: "A dictionary item's identity is its value. A producer that does emit duplicates gives them no meaning by index or order, and a processor may remove duplicates and unreferenced items without consumers noticing.",
+					anchor: "L114-L122",
+				},
+				{
+					title: "A sample carries values, timestamps, or both in step",
+					level: "MUST",
+					text: "At least one entry in `values` or `timestamps_unix_nano`. With both, the two arrays have the same length and the same index is the same event. With timestamps only, each one counts as a value of 1.",
+					anchor: "L465-L478",
+				},
+				{
+					title: "One sample per identity",
+					level: "SHOULD",
+					text: "A sample's identity is `{stack_index, set_of(attribute_indices), link_index}`. Samples that share it are combined by appending to `values` and `timestamps_unix_nano`, and every sample in a profile uses the same shape.",
+					anchor: "L469-L489",
+				},
+				{
+					title: "A mapping names its binary by build id",
+					level: "MUST",
+					text: "Every `Mapping` carries at least one of `process.executable.build_id.gnu`, `process.executable.build_id.go` and `process.executable.build_id.htlhash`, and all three where possible. `htlhash` is recommended on every mapping because it needs no build id in the binary: the first 16 bytes of a SHA-256 over the file's first and last 4096 bytes and its length.",
+					anchor: "attributes",
+					doc: SPEC_MAPPINGS_DOC,
+				},
+				{
+					title: "Attribute keys stay unique where they are referenced",
+					level: "MUST",
+					text: "`attribute_table` may hold several entries with the same key, but the `attribute_indices` of one message cannot point at two of them. Keep sample attributes to bounded cardinality: a value unique to every sample defeats the dictionary.",
+					anchor: "L168-L189",
+				},
+				{
+					title: "Resource and scope attributes may point into the string table",
+					level: "MUST NOT",
+					text: "Since v1.10.0 a `KeyValue` in a profiles request can carry `key_strindex` in place of `key`, and an `AnyValue` `string_value_strindex` in place of the string. Never set both. A receiver that reads only the inline fields sees empty keys.",
+					anchor: "L77-L100",
+					doc: COMMON_PROTO,
+				},
+				{
+					title: "The original payload travels with its format",
+					level: "MUST",
+					text: "`original_payload` and `original_payload_format` are set together or both left unset. The known formats are `pprof`, `jfr` and `linux_perf`. Use it when the source carries what this format cannot represent without loss.",
+					anchor: "L398-L416",
+				},
+				{
+					title: "A version header guards the development format",
+					level: "MUST",
+					text: "Merged after v1.11.1 and in no release yet. The request names its format in `OTLP-Profiles-Development-Version` (`otlp-profiles-development-version` on gRPC). Version `1` may omit it; later versions send it. A server rejects a version it does not support before decoding, with HTTP `400` or `INVALID_ARGUMENT`, and the client drops the data without retrying.",
+					anchor: "profiles-development-version",
+					doc: OTLP_SPEC_MAIN,
+				},
+				{
+					title: "Name the most precise frame type",
+					level: "MUST",
+					text: "`profile.frame.type` uses a well-known value whenever one applies. `native` covers C, C++, Go and Rust frames, but a more precise value such as `go` or `rust` wins when the profiler can tell.",
+					anchor: "frame-types",
+					doc: SEMCONV_PROFILES_DOC,
+				},
+				{
+					title: "pprof sample type attributes sit on the scope",
+					level: "MUST",
+					text: "`pprof.scope.default_sample_type` and `pprof.scope.sample_type_order` exist so a profile converts back to pprof without loss. When present they are scope attributes, not profile or sample ones.",
+					anchor: "compatibility-with-pprof",
+					doc: SEMCONV_PROFILES_DOC,
+				},
+			],
+		},
 	},
 	{
 		slug: "cicd",
@@ -295,6 +428,26 @@ export interface Governance {
 	readonly protoFile?: string
 }
 
+/** One proto release, and what it did to a signal's wire definitions. */
+export interface WireRelease {
+	readonly version: string
+	readonly publishedAt: string
+	/** Removals, renumberings and retypings: what an older peer misdecodes. */
+	readonly incompatible: readonly Change[]
+	/** Additions and wording, which an older peer survives. */
+	readonly compatible: readonly Change[]
+}
+
+export interface DomainWireData {
+	readonly def: DomainWire
+	/** Messages, enums and the service in the signal's packages, data model first. */
+	readonly messages: readonly ProtoMessage[]
+	/** Every tracked proto release, newest first. */
+	readonly history: readonly WireRelease[]
+	/** The newest release that changed the wire format incompatibly. */
+	readonly lastIncompatible?: WireRelease
+}
+
 export interface RegistryEntry {
 	readonly attribute: Attribute
 	readonly registry: "semconv" | "genai"
@@ -320,6 +473,7 @@ export interface Domain {
 	readonly governance: readonly Governance[]
 	/** Recent semantic-conventions changes to anything in this domain. */
 	readonly changes: readonly { readonly version: string; readonly change: Change }[]
+	readonly wire?: DomainWireData
 }
 
 /**
@@ -435,11 +589,16 @@ export function buildDomains(data: Catalog): readonly Domain[] {
 		const domainEntities = signals.filter((s) => s.kind === "entity").sort((a, b) => a.name.localeCompare(b.name))
 
 		const matcher = keywordMatcher(def.keywords ?? [])
+		// A signal's own specification area binds it whether or not a sentence names it.
+		const ownArea = def.wire ? `specification/${def.wire.area}/` : undefined
 		const requirements: DomainRequirement[] = matcher
 			? specSections
 					.flatMap((section) => section.normative.map((statement) => ({ statement, section })))
 					.filter(({ section }) => !TRANSPORT_DOCS.test(section.path))
-					.filter(({ statement, section }) => matcher.test(statement.text) || matcher.test(section.title))
+					.filter(
+						({ statement, section }) =>
+							matcher.test(statement.text) || matcher.test(section.title) || (ownArea !== undefined && section.path.startsWith(ownArea)),
+					)
 					.sort(
 						(a, b) =>
 							// A section *about* the topic beats a passing mention of it, and a
@@ -458,20 +617,20 @@ export function buildDomains(data: Catalog): readonly Domain[] {
 			["event", events.length],
 			["entity", domainEntities.length],
 		]
-		const governance = present
+		const governed: { readonly area: string; readonly what: string; readonly protoFile?: string }[] = present
 			.filter(([, n]) => n > 0)
-			.map(([kind]) => {
-				const mapping = AREA_FOR_SIGNAL[kind] as { area: string; what: string }
-				const totals = areaTotals.get(mapping.area)
-				const governanceEntry: Governance = {
-					area: mapping.area,
-					what: mapping.what,
+			.map(([kind]) => ({ ...(AREA_FOR_SIGNAL[kind] as { area: string; what: string }), protoFile: PROTO_FOR_SIGNAL[kind] }))
+		// The signal's own area comes first; its proto is the wire section, not a footnote.
+		if (def.wire) governed.unshift({ area: def.wire.area, what: def.wire.what })
+		const governance = governed
+			.map((entry): Governance => {
+				const totals = areaTotals.get(entry.area)
+				return {
+					...entry,
 					count: totals?.count ?? 0,
 					documents: totals?.documents.size ?? 0,
 					binding: totals?.binding ?? 0,
-					protoFile: PROTO_FOR_SIGNAL[kind],
 				}
-				return governanceEntry
 			})
 			.filter((entry) => entry.count > 0)
 
@@ -498,6 +657,29 @@ export function buildDomains(data: Catalog): readonly Domain[] {
 			requirements,
 			governance,
 			changes,
+			wire: def.wire ? wireData(def.wire, data) : undefined,
 		}
 	})
+}
+
+function wireData(def: DomainWire, data: Catalog): DomainWireData {
+	const inPackage = (name: string) => def.packages.findIndex((pkg) => name.startsWith(`${pkg}.`))
+	const messages = data.proto.latest.messages
+		.filter((message) => inPackage(message.name) >= 0)
+		.sort((a, b) => inPackage(a.name) - inPackage(b.name) || a.name.localeCompare(b.name))
+
+	const published = new Map(data.proto.releases.map((release) => [release.version, release.publishedAt]))
+	const history = data.proto.diffs.map((diff): WireRelease => {
+		const changes = diff.changes.filter((change) => inPackage(change.id) >= 0)
+		return {
+			version: diff.to,
+			publishedAt: published.get(diff.to) ?? "",
+			// In a development package nothing is "breaking": the diff engine files a
+			// removal or renumbering as notable, and an addition as informational.
+			incompatible: changes.filter((change) => change.severity !== "informational"),
+			compatible: changes.filter((change) => change.severity === "informational"),
+		}
+	})
+
+	return { def, messages, history, lastIncompatible: history.find((release) => release.incompatible.length > 0) }
 }

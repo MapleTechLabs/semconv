@@ -61,6 +61,8 @@ Fetch ${origin}/api/domains.json - the registry grouped by topic. Attributes, me
 carry the same namespace prefixes, so a domain gathers all three; \`governedBy\` names the parts of
 the specification that bind each signal kind. The specification prose never says "database", which
 is why a keyword search of it comes back empty: what binds a db span is the trace specification.
+A domain that is a signal of its own (profiling) also carries \`wire\`: its OTLP path, gRPC service,
+messages, and which proto releases changed the format incompatibly.
 
 **"What does the spec actually require here?"**
 Fetch ${origin}/api/requirements.json - every MUST, SHOULD and MAY in the current specification and

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 import { catalog } from "../../../src/model/catalog.ts"
-import { buildDomains } from "../../../src/model/domains.ts"
+import { buildDomains, ruleUrl } from "../../../src/model/domains.ts"
 import { json } from "../../lib/api.ts"
 
 /**
@@ -11,7 +11,7 @@ import { json } from "../../lib/api.ts"
  */
 export const GET: APIRoute = async () => {
 	const data = await catalog()
-	const domains = buildDomains(data).map((domain) => ({
+	const domains = buildDomains(data).map(({ def: { rules }, ...domain }) => ({
 		slug: domain.slug,
 		title: domain.title,
 		blurb: domain.blurb,
@@ -33,14 +33,31 @@ export const GET: APIRoute = async () => {
 			kind: signal.kind,
 			spanKind: signal.spanKind ?? null,
 		})),
-		rules: domain.def.rules
+		rules: rules
 			? {
-					source: domain.def.rules.doc,
-					items: domain.def.rules.items.map((rule) => ({
+					source: rules.doc,
+					items: rules.items.map((rule) => ({
 						title: rule.title,
 						level: rule.level,
 						text: rule.text,
-						url: `${domain.def.rules?.doc}#${rule.anchor}`,
+						url: ruleUrl(rules, rule),
+					})),
+				}
+			: null,
+		wire: domain.wire
+			? {
+					signal: domain.wire.def.what.toLowerCase(),
+					protoVersion: data.proto.latest.version,
+					packages: domain.wire.def.packages,
+					httpPath: domain.wire.def.httpPath,
+					grpcService: domain.wire.def.grpcService,
+					messages: domain.wire.messages.filter((message) => message.kind === "message").map((message) => message.name),
+					lastIncompatibleRelease: domain.wire.lastIncompatible?.version ?? null,
+					releases: domain.wire.history.map((release) => ({
+						version: release.version,
+						publishedAt: release.publishedAt || null,
+						incompatibleChanges: release.incompatible.length,
+						url: `/releases/proto/${release.version}`,
 					})),
 				}
 			: null,
