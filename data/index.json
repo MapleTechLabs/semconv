@@ -1,6 +1,22 @@
 {
-	"generatedAt": "2026-11-06T03:13:24Z",
+	"generatedAt": "2026-11-18T23:05:55Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "ea1b4d9",
+			"version": "2026-11-18.2",
+			"publishedAt": "2026-11-18T23:05:55Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/ea1b4d9c21dc206ddc34fb0bbd27a493e47b7f57",
+			"body": "Share attributes between inference span and operation details event (#724)"
+		},
+		{
+			"source": "genai",
+			"tag": "aaed88a",
+			"version": "2026-11-18",
+			"publishedAt": "2026-11-18T23:01:56Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/aaed88a8f1462ff599af0b0d535d37e4e302e5e6",
+			"body": "Clarify the scope of `gen_ai.tool.definitions` (#721)"
+		},
 		{
 			"source": "genai",
 			"tag": "af28cec",
