@@ -1,6 +1,30 @@
 {
-	"generatedAt": "2026-11-18T23:05:55Z",
+	"generatedAt": "2026-11-20T01:28:57Z",
 	"releases": [
+		{
+			"source": "genai",
+			"tag": "622b2b6",
+			"version": "2026-11-20",
+			"publishedAt": "2026-11-20T01:28:57Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/622b2b6073b15e5ed886c3c12a65a892b9cd5c70",
+			"body": "Flatten attribute group nesting and reduce duplication (#735)"
+		},
+		{
+			"source": "genai",
+			"tag": "222346e",
+			"version": "2026-11-19.2",
+			"publishedAt": "2026-11-19T16:42:28Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/222346e0922f8efaf906edb38089a2edabd6cbe5",
+			"body": "[chore]  Clean up GenAI model YAML (#725)"
+		},
+		{
+			"source": "genai",
+			"tag": "2e5c892",
+			"version": "2026-11-19",
+			"publishedAt": "2026-11-19T16:26:56Z",
+			"url": "https://github.com/open-telemetry/semantic-conventions-genai/commit/2e5c892aa8a3b7e1d92c8f3f24260402cbf0559a",
+			"body": "Replace gen_ai.prompt.variable with structured gen_ai.prompt.variables object attribute (#696)"
+		},
 		{
 			"source": "genai",
 			"tag": "ea1b4d9",
